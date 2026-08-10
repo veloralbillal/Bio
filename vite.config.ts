@@ -6,6 +6,7 @@ import expressApp from './server.js';
 
 export default defineConfig(() => {
   return {
+    base: './',
     plugins: [
       react(),
       tailwindcss(),
