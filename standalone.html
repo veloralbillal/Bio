@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billal Hossen - Gravatar Profile, Portfolio & Crypto Payment Portal</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 UMD & ReactDOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Babel Standalone for JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      overflow-x: hidden;
+      background-color: #020617;
+      color: #f8fafc;
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.25s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased min-h-screen">
+
+  <div id="root"></div>
+
+  <!-- Main React App Script -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // --- SVG ICON HELPER ---
+    const Icon = ({ name, className = "w-4 h-4", size }) => {
+      const style = size ? { width: size, height: size } : {};
+      switch (name) {
+        case 'arrow-left':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 12H5M12 19l-7-7 7-7"/></svg>;
+        case 'copy':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path strokeLinecap="round" strokeLinejoin="round" d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
+        case 'check':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>;
+        case 'qr-code':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>;
+        case 'coins':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="8" cy="8" r="6"/><path d="M18 8a6 6 0 0 1-6 6"/><path d="M22 12a6 6 0 0 1-6 6"/></svg>;
+        case 'shield-check':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>;
+        case 'external-link':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>;
+        case 'sparkles':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></svg>;
+        case 'check-circle':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
+        case 'refresh':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>;
+        case 'alert-circle':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>;
+        case 'sun':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>;
+        case 'moon':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>;
+        case 'mail':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>;
+        case 'phone':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
+        case 'map-pin':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>;
+        case 'send':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
+        case 'star':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+        case 'search':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>;
+        case 'menu':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>;
+        case 'x':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>;
+        case 'globe':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+        case 'lock':
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
+        default:
+          return <svg className={className} style={style} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>;
+      }
+    };
+
+    // --- INITIAL PROFILE DATA ---
+    const INITIAL_PROFILE = {
+      name: 'Billal Hossen',
+      title: 'Full-Stack Software Engineer & UI/UX Specialist',
+      bio: 'Crafting pixel-perfect web applications, microservices, and decentralized payment interfaces with React, Node.js, and modern CSS.',
+      location: 'Dhaka, Bangladesh',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+      status: 'Available for freelance projects & full-time roles',
+      gravatarUrl: 'https://gravatar.com/billalhossen',
+      cryptoWallets: [
+        { id: 'btc', name: 'Bitcoin Network', symbol: 'BTC', network: 'Bitcoin Mainnet', address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh', note: 'Direct Bitcoin settlement', iconColor: 'from-amber-500 to-orange-600', enabled: true },
+        { id: 'ltc', name: 'Litecoin Network', symbol: 'LTC', network: 'Litecoin Mainnet', address: 'LTC1q8x9w204k8lzkjfhq4u93s098xzhk832klpqw98', note: 'Fast & low fee LTC transfer', iconColor: 'from-slate-400 to-slate-600', enabled: true },
+        { id: 'eth', name: 'Ethereum Network', symbol: 'ETH', network: 'Ethereum / ERC-20', address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F', note: 'Supports ETH and ERC-20 tokens', iconColor: 'from-indigo-500 to-purple-600', enabled: true },
+        { id: 'usdt', name: 'Tether USDT', symbol: 'USDT', network: 'TRON / TRC-20', address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', note: 'USDT TRC20 transfer', iconColor: 'from-emerald-500 to-teal-600', enabled: true },
+        { id: 'sol', name: 'Solana Network', symbol: 'SOL', network: 'Solana Mainnet', address: '7xKXtg2CW87d97TXJSDpbD5jBk422S37S8D1q090sol', note: 'Instant SOL settlement', iconColor: 'from-purple-500 to-pink-600', enabled: true }
+      ],
+      socialLinks: [
+        { id: '1', title: 'GitHub Profile', category: 'Coding', url: 'https://github.com', icon: 'globe', clicks: 142, enabled: true },
+        { id: '2', title: 'LinkedIn Network', category: 'Professional', url: 'https://linkedin.com', icon: 'globe', clicks: 98, enabled: true },
+        { id: '3', title: 'Twitter / X', category: 'Social', url: 'https://x.com', icon: 'globe', clicks: 76, enabled: true },
+        { id: '4', title: 'Personal Tech Blog', category: 'Websites', url: 'https://dev.to', icon: 'globe', clicks: 54, enabled: true }
+      ],
+      websites: [
+        { id: '1', name: 'DevStudio Portfolio', url: 'https://example.com', badge: 'Official', description: 'Personal Software Engineering Portfolio' },
+        { id: '2', name: 'SaaS Analytics Platform', url: 'https://example.org', badge: 'SaaS App', description: 'Realtime telemetry dashboard' }
+      ],
+      projects: [
+        { id: 'p1', title: 'Cryptocurrency Gateway Engine', category: 'Web App', description: 'Non-custodial multi-wallet payment processor built for global transactions.', demoUrl: 'https://example.com', stars: '4.9', image: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=600&auto=format&fit=crop&q=80' },
+        { id: 'p2', title: 'Gravatar Profile & Bio Card', category: 'UI Component', description: 'Verified digital identity and instant social directory application.', demoUrl: 'https://example.com', stars: '5.0', image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&auto=format&fit=crop&q=80' }
+      ]
+    };
+
+    // --- STANDALONE CRYPTO PAYMENT PAGE ---
+    function CryptoPaymentPage({ profile, onBack }) {
+      const wallets = profile?.cryptoWallets || [];
+      const activeWallets = wallets.filter(w => w.enabled !== false);
+      const [selectedWalletId, setSelectedWalletId] = useState(null);
+      const [copiedId, setCopiedId] = useState(null);
+
+      const activeSelected = activeWallets.find(w => w.id === selectedWalletId) || activeWallets[0] || null;
+
+      useEffect(() => {
+        window.scrollTo(0, 0);
+      }, []);
+
+      const handleCopy = (address, id) => {
+        navigator.clipboard.writeText(address);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+      };
+
+      return (
+        <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex flex-col font-sans animate-fade-in">
+          
+          <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+            <button
+              onClick={onBack}
+              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all hover:scale-105 active:scale-95 border border-slate-700 shadow-md"
+            >
+              <Icon name="arrow-left" className="w-4 h-4 text-amber-400" />
+              <span>Back to Profile</span>
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <img src={profile?.avatarUrl} alt={profile?.name} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border-2 border-amber-500 shadow-md" />
+                <Icon name="check-circle" className="w-3.5 h-3.5 text-blue-400 absolute -bottom-0.5 -right-0.5 bg-slate-950 rounded-full" />
+              </div>
+              <div className="hidden sm:block text-left">
+                <h2 className="text-xs font-black text-white">{profile?.name}</h2>
+                <p className="text-[10px] text-amber-400 font-mono font-bold">Verified Crypto Portal</p>
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-8 space-y-8 my-4">
+            
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-slate-950 border border-amber-500/30 p-6 sm:p-10 shadow-2xl">
+              <div className="relative z-10 max-w-2xl space-y-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold">
+                  <Icon name="coins" className="w-4 h-4 text-amber-400" />
+                  <span>Direct Peer-to-Peer Wallet Network</span>
+                </div>
+
+                <h1 className="text-2xl sm:text-4xl font-black text-white leading-tight">
+                  Crypto Payment & Tip Hub
+                </h1>
+
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Send direct cryptocurrency payments, tips, or project support to <strong className="text-white">{profile?.name}</strong> across multiple mainnet networks including Bitcoin (BTC), Litecoin (LTC), Ethereum (ETH), Tether (USDT), and Solana (SOL).
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              <div className="lg:col-span-5 space-y-3">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between px-1">
+                  <span>Select Payment Currency ({activeWallets.length})</span>
+                  <span className="text-[10px] text-amber-400 font-mono font-bold">Instant Peer-to-Peer</span>
+                </h3>
+
+                <div className="space-y-2.5">
+                  {activeWallets.map((w) => {
+                    const isSelected = activeSelected && activeSelected.id === w.id;
+                    return (
+                      <button
+                        key={w.id}
+                        onClick={() => setSelectedWalletId(w.id)}
+                        className={`w-full p-4 rounded-2xl text-left flex items-center justify-between transition-all duration-200 border ${
+                          isSelected
+                            ? 'bg-slate-900 border-amber-500/80 shadow-xl ring-2 ring-amber-500/30 scale-[1.01]'
+                            : 'bg-slate-900/60 hover:bg-slate-900 border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${w.iconColor || 'from-amber-500 to-orange-600'} text-white font-black text-sm flex items-center justify-center shrink-0 shadow-lg`}>
+                            {w.symbol}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-white text-sm">{w.name}</h4>
+                              <span className="px-2 py-0.5 rounded-md bg-slate-800 text-amber-300 text-[10px] font-mono font-bold">
+                                {w.symbol}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-400 font-mono mt-0.5 truncate max-w-[180px]">
+                              {w.network}
+                            </p>
+                          </div>
+                        </div>
+
+                        <span className={`px-2.5 py-1 rounded-xl text-[10px] font-mono font-bold ${
+                          isSelected ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'
+                        }`}>
+                          {isSelected ? 'Active' : 'Select'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="lg:col-span-7">
+                {activeSelected ? (
+                  <div className="p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 space-y-6 shadow-2xl">
+                    
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${activeSelected.iconColor || 'from-amber-500 to-orange-600'} text-white font-black text-base flex items-center justify-center shrink-0 shadow-lg`}>
+                          {activeSelected.symbol}
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-black text-white">{activeSelected.name} Deposit Wallet</h3>
+                          <p className="text-xs text-slate-400 font-mono">Network: <span className="text-amber-400 font-bold">{activeSelected.network}</span></p>
+                        </div>
+                      </div>
+
+                      <span className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-mono font-bold flex items-center gap-1.5">
+                        <Icon name="shield-check" className="w-4 h-4" />
+                        <span>Verified Address</span>
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                        <label className="uppercase tracking-wider">{activeSelected.name} ({activeSelected.symbol}) Address</label>
+                        <span className="text-slate-500 font-mono text-[11px]">Click to copy address</span>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 rounded-2xl bg-slate-950 border border-slate-800">
+                        <input 
+                          type="text" 
+                          readOnly 
+                          value={activeSelected.address} 
+                          className="w-full bg-transparent text-xs sm:text-sm font-mono text-amber-300 outline-none select-all px-2 py-1"
+                        />
+                        <button
+                          onClick={() => handleCopy(activeSelected.address, activeSelected.id)}
+                          className="px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shrink-0 transition-all active:scale-95 shadow-lg"
+                        >
+                          {copiedId === activeSelected.id ? (
+                            <>
+                              <Icon name="check" className="w-4 h-4 text-slate-950" />
+                              <span>Copied to Clipboard!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Icon name="copy" className="w-4 h-4" />
+                              <span>Copy Address</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row items-center gap-6">
+                      <div className="p-3 bg-white rounded-2xl shrink-0 shadow-xl border border-slate-200">
+                        <img 
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(activeSelected.address)}`} 
+                          alt={`${activeSelected.name} QR`} 
+                          className="w-36 h-36 object-contain"
+                        />
+                      </div>
+
+                      <div className="space-y-3 text-center sm:text-left">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 text-xs font-mono font-bold border border-indigo-500/30">
+                          <Icon name="qr-code" className="w-3.5 h-3.5" />
+                          <span>Scan QR with Mobile Wallet</span>
+                        </span>
+
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          {activeSelected.note || `Send only ${activeSelected.symbol} on ${activeSelected.network} to this address.`}
+                        </p>
+
+                        <div className="pt-1 flex items-center justify-center sm:justify-start gap-2 text-[11px] text-amber-400 font-mono">
+                          <Icon name="alert-circle" className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                          <span>Verify network ({activeSelected.network}) before sending.</span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                ) : null}
+              </div>
+
+            </div>
+
+          </main>
+
+          <footer className="mt-auto border-t border-slate-800 py-6 px-4 bg-slate-900 text-center text-xs text-slate-400 space-y-2">
+            <button onClick={onBack} className="text-amber-400 hover:underline font-bold">
+              ← Return to Main Profile
+            </button>
+            <p className="text-[11px] text-slate-500">
+              Verified Gravatar Identity & Crypto Payment Gateway
+            </p>
+          </footer>
+
+        </div>
+      );
+    }
+
+    // --- MAIN APP COMPONENT ---
+    function App() {
+      const [profile, setProfile] = useState(() => {
+        try {
+          const saved = localStorage.getItem('gravatar_hub_profile_v1');
+          return saved ? JSON.parse(saved) : INITIAL_PROFILE;
+        } catch(e) {
+          return INITIAL_PROFILE;
+        }
+      });
+
+      const [currentView, setCurrentView] = useState(() => {
+        return window.location.hash === '#crypto' || window.location.hash === '#crypto-pay' ? 'crypto' : 'home';
+      });
+
+      const [darkMode, setDarkMode] = useState(true);
+      const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
+      const [contactSent, setContactSent] = useState(false);
+
+      useEffect(() => {
+        const handleHash = () => {
+          if (window.location.hash === '#crypto' || window.location.hash === '#crypto-pay') {
+            setCurrentView('crypto');
+          } else {
+            setCurrentView('home');
+          }
+        };
+        window.addEventListener('hashchange', handleHash);
+        return () => window.removeEventListener('hashchange', handleHash);
+      }, []);
+
+      const handleOpenCryptoPage = () => {
+        setCurrentView('crypto');
+        window.location.hash = '#crypto-pay';
+      };
+
+      const handleBackToProfile = () => {
+        setCurrentView('home');
+        window.location.hash = '';
+      };
+
+      const handleSendMessage = (e) => {
+        e.preventDefault();
+        if (!contactForm.name || !contactForm.message) return;
+        
+        try {
+          const existing = JSON.parse(localStorage.getItem('gravatar_hub_messages_v1') || '[]');
+          const newMsg = { id: Date.now().toString(), ...contactForm, date: new Date().toLocaleDateString(), read: false };
+          localStorage.setItem('gravatar_hub_messages_v1', JSON.stringify([newMsg, ...existing]));
+        } catch(e) {}
+
+        setContactSent(true);
+        setContactForm({ name: '', email: '', message: '' });
+        setTimeout(() => setContactSent(false), 4000);
+      };
+
+      if (currentView === 'crypto') {
+        return <CryptoPaymentPage profile={profile} onBack={handleBackToProfile} />;
+      }
+
+      return (
+        <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-950 text-slate-100 font-sans">
+          
+          {/* Header Bar */}
+          <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src={profile.avatarUrl} alt={profile.name} className="w-9 h-9 rounded-full object-cover border-2 border-amber-500 shadow-md" />
+              <div>
+                <h1 className="text-sm font-black text-white">{profile.name}</h1>
+                <p className="text-[10px] text-amber-400 font-mono">Digital Identity Hub</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleOpenCryptoPage}
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-lg transition-all hover:scale-105 active:scale-95"
+              >
+                <Icon name="coins" className="w-4 h-4" />
+                <span>Crypto Pay</span>
+              </button>
+            </div>
+          </header>
+
+          {/* Profile Hero */}
+          <main className="max-w-4xl mx-auto p-4 sm:p-8 space-y-10 my-4">
+            
+            <section className="p-6 sm:p-10 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl space-y-6 relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
+                <img src={profile.avatarUrl} alt={profile.name} className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-amber-500/80 shadow-2xl shrink-0" />
+                
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-mono font-bold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span>{profile.status}</span>
+                  </div>
+
+                  <h1 className="text-2xl sm:text-4xl font-black text-white">{profile.name}</h1>
+                  <p className="text-xs sm:text-sm text-amber-300 font-mono font-semibold">{profile.title}</p>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">{profile.bio}</p>
+
+                  <div className="flex items-center justify-center sm:justify-start gap-4 text-xs text-slate-400 font-mono pt-1">
+                    <span className="flex items-center gap-1.5"><Icon name="map-pin" className="w-4 h-4 text-rose-400" /> {profile.location}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Crypto Quick Gateway Card */}
+            <section className="p-6 rounded-3xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-slate-950 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+              <div className="space-y-1 text-center sm:text-left">
+                <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-amber-400">
+                  <Icon name="coins" className="w-4 h-4" />
+                  <span>Verified Web3 Deposit Portal</span>
+                </div>
+                <h3 className="text-lg font-black text-white">Need to send crypto payments or tips?</h3>
+                <p className="text-xs text-slate-300">Accepting BTC, LTC, ETH, USDT, and SOL with direct address copy & QR codes.</p>
+              </div>
+
+              <button
+                onClick={handleOpenCryptoPage}
+                className="px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-2 shrink-0 transition-all hover:scale-105 active:scale-95 shadow-xl"
+              >
+                <span>Open Crypto Payment Hub</span>
+                <Icon name="external-link" className="w-4 h-4" />
+              </button>
+            </section>
+
+            {/* Projects Showcase */}
+            <section className="space-y-4">
+              <h2 className="text-lg font-black text-white flex items-center gap-2">
+                <span>Featured Engineering Projects</span>
+              </h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {profile.projects.map((proj) => (
+                  <div key={proj.id} className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3 hover:border-slate-700 transition-all shadow-lg">
+                    <img src={proj.image} alt={proj.title} className="w-full h-36 object-cover rounded-xl border border-slate-800" />
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-bold text-amber-400 uppercase">{proj.category}</span>
+                        <span className="text-xs text-amber-300 font-bold flex items-center gap-1"><Icon name="star" className="w-3.5 h-3.5 fill-amber-300" /> {proj.stars}</span>
+                      </div>
+                      <h3 className="text-sm font-bold text-white">{proj.title}</h3>
+                      <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">{proj.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Contact Form */}
+            <section className="p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+              <h2 className="text-lg font-black text-white flex items-center gap-2">
+                <Icon name="mail" className="w-5 h-5 text-amber-400" />
+                <span>Send Direct Message</span>
+              </h2>
+
+              {contactSent ? (
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold text-center">
+                  ✓ Your message has been sent directly to {profile.name}!
+                </div>
+              ) : (
+                <form onSubmit={handleSendMessage} className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input 
+                      type="text" 
+                      placeholder="Your Full Name" 
+                      required 
+                      value={contactForm.name} 
+                      onChange={e => setContactForm({...contactForm, name: e.target.value})} 
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-500"
+                    />
+                    <input 
+                      type="email" 
+                      placeholder="Your Email Address" 
+                      required 
+                      value={contactForm.email} 
+                      onChange={e => setContactForm({...contactForm, email: e.target.value})} 
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <textarea 
+                    placeholder="Write your message here..." 
+                    rows="3" 
+                    required 
+                    value={contactForm.message} 
+                    onChange={e => setContactForm({...contactForm, message: e.target.value})} 
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-500"
+                  />
+                  <button 
+                    type="submit" 
+                    className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
+                  >
+                    <Icon name="send" className="w-4 h-4" />
+                    <span>Send Message</span>
+                  </button>
+                </form>
+              )}
+            </section>
+
+          </main>
+
+          {/* Footer */}
+          <footer className="border-t border-slate-800 py-6 px-4 text-center text-xs text-slate-400 space-y-2 bg-slate-900">
+            <p className="font-bold text-white">{profile.name} • Gravatar Identity & Crypto Hub</p>
+            <p className="text-[11px] text-slate-500">Standalone Client Application • Fully Compatible with GitHub Pages</p>
+          </footer>
+
+        </div>
+      );
+    }
+
+    // --- RENDER REACT APP ---
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
