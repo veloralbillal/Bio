@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@import "./css/animations.css";
+
+@layer base {
+  html, body, #root {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  h1, h2, h3, .font-heading {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+}

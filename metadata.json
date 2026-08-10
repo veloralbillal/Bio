@@ -1,0 +1,6 @@
+{
+  "name": "Gravatar Profile Hub",
+  "description": "A Gravatar-inspired responsive digital identity, portfolio, social links showcase, contact form, and hidden secure admin panel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
