@@ -274,7 +274,7 @@ export default function SEOHead({ isOpen, onClose, seoData, profile }) {
                     <span>{copiedLink ? 'Copied' : 'Copy URL'}</span>
                   </button>
                   <a
-                    href="/sitemap.xml"
+                    href="./sitemap.xml"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-2 rounded-xl bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 text-xs flex items-center gap-1 font-bold"
@@ -291,7 +291,7 @@ export default function SEOHead({ isOpen, onClose, seoData, profile }) {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>${currentOrigin}/</loc><priority>1.0</priority></url>
   <url><loc>${currentOrigin}/#socials</loc><priority>0.9</priority></url>
-  <url><loc>${currentOrigin}/#projects</loc><priority>0.9</priority></url>
+  <url><loc>${currentOrigin}/#projects</loc><priority>0.8</priority></url>
   <url><loc>${currentOrigin}/#contact</loc><priority>0.8</priority></url>
   <!-- ${activeSocialLinks.length} Social Profiles Included -->
 </urlset>`}</pre>
@@ -309,7 +309,7 @@ export default function SEOHead({ isOpen, onClose, seoData, profile }) {
                   <p className="text-[10px] text-slate-400">Instructs Googlebot to index all public content and sitemaps</p>
                 </div>
                 <a
-                  href="/robots.txt"
+                  href="./robots.txt"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 rounded-xl bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 border border-indigo-500/30 text-xs flex items-center gap-1 font-bold"
