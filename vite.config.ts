@@ -6,7 +6,7 @@ import expressApp from './server.js';
 
 export default defineConfig(({ command }) => {
   return {
-    base: command === 'serve' ? '/' : './',
+    base: command === 'serve' ? '/' : (process.env.BASE_PATH || (process.env.GITHUB_REPOSITORY ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/` : '/Bio/')),
     plugins: [
       react(),
       tailwindcss(),
