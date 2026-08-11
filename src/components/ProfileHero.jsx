@@ -38,7 +38,7 @@ export default function ProfileHero({ profile, onOpenQR, onContactClick, onOpenC
 
       {/* Main Profile Card Container */}
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 -mt-16 sm:-mt-20">
-        <div className="glass-card rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200/80 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200/80 dark:border-slate-800">
           
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
             

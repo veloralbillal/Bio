@@ -55,7 +55,7 @@ export default function PortfolioSection({ projects, galleryPhotos }) {
           {projects.map((proj) => (
             <div 
               key={proj.id}
-              className="group glass-card rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl flex flex-col justify-between"
+              className="group bg-white dark:bg-slate-900/90 rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl flex flex-col justify-between"
             >
               <div>
                 {/* Image Header */}
@@ -119,7 +119,7 @@ export default function PortfolioSection({ projects, galleryPhotos }) {
             <div 
               key={photo.id}
               onClick={() => setSelectedPhoto(photo)}
-              className="group cursor-pointer glass-card rounded-2xl overflow-hidden relative h-48 border border-slate-200/80 dark:border-slate-800"
+              className="group cursor-pointer bg-white dark:bg-slate-900/90 rounded-2xl overflow-hidden relative h-48 border border-slate-200/80 dark:border-slate-800"
             >
               <img 
                 src={photo.url} 

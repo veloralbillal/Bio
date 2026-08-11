@@ -28,7 +28,7 @@ export default function Navbar({
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 w-full glass-nav border-b border-slate-200/80 dark:border-slate-800/80 transition-all duration-300">
+    <header className="sticky top-0 z-40 w-full glass-nav bg-white/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800/80 transition-all duration-300">
       <div className="max-w-6xl mx-auto px-2.5 sm:px-6 h-16 flex items-center justify-between gap-1.5 sm:gap-3">
         
         {/* Brand / Logo */}

@@ -18,7 +18,7 @@ export default function VerifiedBadges({ verifiedCredentials, cryptoWallets }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Verified Domain & Badges Card */}
-        <div className="glass-card rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800">
           <div className="flex items-center gap-2 mb-4">
             <ShieldCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             <h3 className="font-heading text-lg font-bold text-slate-900 dark:text-white">
@@ -55,7 +55,7 @@ export default function VerifiedBadges({ verifiedCredentials, cryptoWallets }) {
         </div>
 
         {/* Web3 Crypto Wallets Card */}
-        <div className="glass-card rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800">
           <div className="flex items-center gap-2 mb-4">
             <Wallet className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             <h3 className="font-heading text-lg font-bold text-slate-900 dark:text-white">

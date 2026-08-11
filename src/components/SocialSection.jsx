@@ -137,7 +137,7 @@ export default function SocialSection({ socialLinks, searchQuery }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => handleLinkClick(link)}
-                className="group relative glass-card p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-indigo-500/50 dark:hover:border-indigo-500/50 flex items-center justify-between gap-4"
+                className="group relative bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-indigo-500/50 dark:hover:border-indigo-500/50 flex items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
                   {/* Icon Badge */}

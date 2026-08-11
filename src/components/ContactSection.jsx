@@ -42,7 +42,7 @@ export default function ContactSection({ profileEmail }) {
 
   return (
     <section id="contact-section" className="max-w-4xl mx-auto px-4 sm:px-6 mb-16 scroll-mt-24">
-      <div className="glass-card rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xl relative overflow-hidden">
+      <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xl relative overflow-hidden">
         
         {/* Glow accent */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
