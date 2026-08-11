@@ -226,9 +226,9 @@ app.post('/api/admin/messages/action', (req, res) => {
   return res.json({ success: true, messages: store.messages });
 });
 
-// Serve static assets in production if dist exists
+// Serve static assets in standalone production mode only
 const distPath = path.join(__dirname, 'dist');
-if (fs.existsSync(distPath)) {
+if (process.env.NODE_ENV === 'production' && fs.existsSync(distPath)) {
   app.use(express.static(distPath));
   app.get('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));

@@ -4,16 +4,21 @@ import path from 'path';
 import {defineConfig} from 'vite';
 import expressApp from './server.js';
 
-export default defineConfig(() => {
+export default defineConfig(({ command }) => {
   return {
-    base: process.env.BASE_PATH || (process.env.GITHUB_REPOSITORY ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/` : '/Bio/'),
+    base: command === 'serve' ? '/' : (process.env.BASE_PATH || (process.env.GITHUB_REPOSITORY ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/` : '/Bio/')),
     plugins: [
       react(),
       tailwindcss(),
       {
         name: 'express-api-plugin',
         configureServer(server) {
-          server.middlewares.use(expressApp);
+          server.middlewares.use((req, res, next) => {
+            if (req.url && (req.url.startsWith('/api') || req.url === '/robots.txt' || req.url === '/sitemap.xml')) {
+              return (expressApp as any)(req, res, next);
+            }
+            next();
+          });
         }
       }
     ],
