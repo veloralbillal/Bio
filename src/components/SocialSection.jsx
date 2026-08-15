@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Github, Linkedin, Twitter, Youtube, Instagram, Facebook, 
   Send, PhoneCall, Music, Code, BookOpen, Dribbble, Globe, 
@@ -6,6 +7,7 @@ import {
   Grid, List, Sparkles, Filter
 } from 'lucide-react';
 import { trackEvent } from '../js/storage';
+import { fadeInUp, scaleIn } from '../js/motionVariants';
 
 const ICON_MAP = {
   Github: Github,
@@ -127,15 +129,18 @@ export default function SocialSection({ socialLinks, searchQuery }) {
             ? "grid grid-cols-1 sm:grid-cols-2 gap-4" 
             : "flex flex-col gap-3"
         }>
-          {filteredLinks.map((link) => {
+          {filteredLinks.map((link, idx) => {
             const IconComponent = ICON_MAP[link.icon] || Globe;
             
             return (
-              <a
+              <motion.a
                 key={link.id}
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: Math.min(idx * 0.03, 0.3) }}
                 onClick={() => handleLinkClick(link)}
                 className="group relative bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-indigo-500/50 dark:hover:border-indigo-500/50 flex items-center justify-between gap-4"
               >
@@ -187,7 +192,7 @@ export default function SocialSection({ socialLinks, searchQuery }) {
                   </div>
                 </div>
 
-              </a>
+              </motion.a>
             );
           })}
         </div>

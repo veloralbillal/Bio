@@ -12,6 +12,59 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- JSON-LD Structured Data for Person and ProfilePage Rich Snippets -->
+    <script id="structured-data-jsonld" type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "ProfilePage",
+          "@id": "https://billalhossen.com/#profilepage",
+          "name": "Billal Hossen | Gravatar Profile & Social Hub",
+          "url": "https://billalhossen.com",
+          "dateCreated": "2024-01-01T00:00:00+06:00",
+          "dateModified": "2026-08-15T00:00:00+06:00",
+          "mainEntity": {
+            "@id": "https://billalhossen.com/#person"
+          }
+        },
+        {
+          "@type": "Person",
+          "@id": "https://billalhossen.com/#person",
+          "name": "Billal Hossen",
+          "alternateName": "billal_self",
+          "jobTitle": "Full Stack Developer & Cybersecurity Enthusiast",
+          "description": "Verified Gravatar digital identity, portfolio, social links, crypto badges, and direct contact portal for Billal Hossen.",
+          "image": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
+          "url": "https://billalhossen.com",
+          "sameAs": [
+            "https://github.com",
+            "https://linkedin.com",
+            "https://x.com",
+            "https://youtube.com",
+            "https://instagram.com",
+            "https://facebook.com",
+            "https://gravatar.com"
+          ],
+          "knowsAbout": [
+            "Full Stack Web Development",
+            "React",
+            "Node.js",
+            "TypeScript",
+            "Tailwind CSS",
+            "API Architecture",
+            "Ethical Hacking & Cyber Security"
+          ],
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Sylhet",
+            "addressCountry": "Bangladesh"
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 font-sans antialiased min-h-screen selection:bg-indigo-500 selection:text-white">
     <div id="root"></div>

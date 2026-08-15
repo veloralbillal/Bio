@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { 
   Mail, Send, CheckCircle2, AlertCircle, Sparkles, 
   User, MessageSquare, Tag, Inbox
 } from 'lucide-react';
 import { sendContactMessage } from '../js/storage';
+import { fadeInUp } from '../js/motionVariants';
 
 export default function ContactSection({ profileEmail }) {
   const [formData, setFormData] = useState({
@@ -41,7 +43,14 @@ export default function ContactSection({ profileEmail }) {
   };
 
   return (
-    <section id="contact-section" className="max-w-4xl mx-auto px-4 sm:px-6 mb-16 scroll-mt-24">
+    <motion.section 
+      id="contact-section" 
+      variants={fadeInUp}
+      initial="initial"
+      whileInView="animate"
+      viewport={{ once: true, margin: "-40px" }}
+      className="max-w-4xl mx-auto px-4 sm:px-6 mb-16 scroll-mt-24"
+    >
       <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xl relative overflow-hidden">
         
         {/* Glow accent */}
@@ -187,6 +196,6 @@ export default function ContactSection({ profileEmail }) {
         </form>
 
       </div>
-    </section>
+    </motion.section>
   );
 }

@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { generateSitemapXml, generateRobotsTxt } from './src/js/seoGenerator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +14,7 @@ app.use(express.json({ limit: '10mb' }));
 
 // In-memory data store with file backup if available
 const DATA_FILE = path.join(__dirname, 'data_store.json');
+const PUBLIC_DIR = path.join(__dirname, 'public');
 
 let store = {
   adminPin: '1234', // Secret default PIN
@@ -38,9 +40,26 @@ if (fs.existsSync(DATA_FILE)) {
   }
 }
 
-function saveData() {
+function syncSeoFiles(domain) {
+  try {
+    if (!fs.existsSync(PUBLIC_DIR)) {
+      fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+    }
+    const sitemapContent = generateSitemapXml(store.profile || {}, domain);
+    const robotsContent = generateRobotsTxt(domain);
+    fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap.xml'), sitemapContent, 'utf-8');
+    fs.writeFileSync(path.join(PUBLIC_DIR, 'robots.txt'), robotsContent, 'utf-8');
+  } catch (e) {
+    // Non-critical file write
+  }
+}
+
+function saveData(domain = '') {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2));
+    if (domain) {
+      syncSeoFiles(domain);
+    }
   } catch (err) {
     console.error('Error saving data store:', err);
   }
@@ -48,75 +67,25 @@ function saveData() {
 
 // Dynamic Robots.txt for Google & Search Engine Indexing
 app.get('/robots.txt', (req, res) => {
-  res.type('text/plain');
+  res.type('text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
   const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
   const host = req.get('host');
   const domain = `${protocol}://${host}`;
 
-  res.send(`User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /admin
-
-# Auto Index Sitemap
-Sitemap: ${domain}/sitemap.xml
-Host: ${domain}
-`);
+  const robotsTxt = generateRobotsTxt(domain);
+  res.send(robotsTxt);
 });
 
-// Dynamic XML Sitemap for Auto Indexing
+// Dynamic XML Sitemap for Auto Indexing based on portfolio & websites
 app.get('/sitemap.xml', (req, res) => {
-  res.type('application/xml');
+  res.type('application/xml; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
   const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
   const host = req.get('host');
   const domain = `${protocol}://${host}`;
-  const lastMod = new Date().toISOString().split('T')[0];
 
-  const profile = store.profile || {};
-  const socialLinks = (profile.socialLinks || []).filter(l => l.enabled !== false && l.url);
-
-  const socialNodes = socialLinks.map(link => {
-    const cleanUrl = link.url.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return `
-  <url>
-    <loc>${cleanUrl}</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-  }).join('');
-
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
-        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-  <url>
-    <loc>${domain}/</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${domain}/#socials</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${domain}/#projects</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${domain}/#contact</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>${socialNodes}
-</urlset>`;
-
+  const xml = generateSitemapXml(store.profile || {}, domain);
   res.send(xml);
 });
 
@@ -208,7 +177,10 @@ app.get('/api/admin/data', (req, res) => {
 // Save Admin Profile / Config
 app.post('/api/admin/profile', (req, res) => {
   store.profile = req.body;
-  saveData();
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+  const host = req.get('host');
+  const domain = `${protocol}://${host}`;
+  saveData(domain);
   return res.json({ success: true, profile: store.profile });
 });
 

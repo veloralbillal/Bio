@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { 
   X, Globe, ExternalLink, Sparkles, Building, ArrowUpRight, 
-  Share2, FolderGit2, Mail, Shield, MoreVertical, Search, ChevronRight, UserCheck
+  Share2, FolderGit2, Mail, Shield, Search, ChevronRight, Heart
 } from 'lucide-react';
 
-export default function MenuModal({ isOpen, onClose, websites = [], profile = {}, onOpenAdminAuth }) {
+export default function MenuModal({ isOpen, onClose, websites = [], profile = {}, onOpenAdminAuth, onOpenDonate }) {
   const [activeTab, setActiveTab] = useState('websites');
   const [filterQuery, setFilterQuery] = useState('');
-  const [isOptionsOpen, setIsOptionsOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -60,48 +59,11 @@ export default function MenuModal({ isOpen, onClose, websites = [], profile = {}
           </div>
 
           <div className="flex items-center gap-1">
-            {/* 3-Dot Options Menu */}
-            <div className="relative">
-              <button
-                onClick={() => setIsOptionsOpen(!isOptionsOpen)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
-                title="Sidebar Options"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
-
-              {isOptionsOpen && (
-                <div className="absolute right-0 top-10 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-2 z-50 text-xs">
-                  <button
-                    onClick={() => {
-                      setIsOptionsOpen(false);
-                      onClose();
-                      onOpenAdminAuth?.();
-                    }}
-                    className="w-full p-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-slate-800 text-left font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2"
-                  >
-                    <Shield className="w-3.5 h-3.5" />
-                    <span>Owner Admin Access</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsOptionsOpen(false);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                      onClose();
-                    }}
-                    className="w-full p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-left text-slate-700 dark:text-slate-300 flex items-center gap-2"
-                  >
-                    <UserCheck className="w-3.5 h-3.5" />
-                    <span>Scroll to Top Hero</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
             {/* Close Button */}
             <button
               onClick={onClose}
               className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
+              title="Close Menu"
             >
               <X className="w-5 h-5" />
             </button>
@@ -293,6 +255,19 @@ export default function MenuModal({ isOpen, onClose, websites = [], profile = {}
 
         {/* Sidebar Footer with Quick Links & Owner Access */}
         <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 space-y-2 shrink-0">
+          {profile?.donationConfig?.enabled !== false && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenDonate?.();
+              }}
+              className="w-full p-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-rose-500/20 transition-all"
+            >
+              <Heart className="w-4 h-4 fill-white animate-pulse" />
+              <span>Support & Donate Page</span>
+            </button>
+          )}
+
           <button
             onClick={() => {
               onClose();

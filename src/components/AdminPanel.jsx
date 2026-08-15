@@ -7,10 +7,13 @@ import {
   Activity, TrendingUp, Users, MousePointer, ExternalLink, Sparkles,
   Upload, Github, Linkedin, Twitter, Youtube, Facebook, Instagram,
   Send, PhoneCall, Music, BookOpen, Dribbble, MessageSquare, Code, Filter,
-  Coins, QrCode, Wallet
+  Coins, QrCode, Wallet, Heart, FileText, FileCode
 } from 'lucide-react';
 import { PREDEFINED_NETWORKS } from '../js/predefinedNetworks';
 import { getStoredMessages, deleteStoredMessage } from '../js/storage';
+import AdminDonationTab from './AdminDonationTab';
+import AdminSeoTab from './AdminSeoTab';
+import AdminMetadataTab from './AdminMetadataTab';
 
 export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) {
   const [activeTab, setActiveTab] = useState('homepage_analysis');
@@ -338,6 +341,9 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
 
   const sidebarTabs = [
     { id: 'homepage_analysis', label: 'Homepage Analysis', icon: Activity, desc: 'Traffic, clicks & engagement' },
+    { id: 'metadata_manager', label: 'Dynamic Metadata & OG', icon: FileCode, desc: 'Meta tags, titles & social share cards' },
+    { id: 'seo_sitemap', label: 'Auto Sitemap & Robots.txt', icon: FileText, desc: 'Dynamic XML sitemap & search indexing' },
+    { id: 'donations', label: 'Donation & Support Control', icon: Heart, desc: 'Buy Me a Coffee, PayPal, bKash & Goals' },
     { id: 'websites', label: 'Our Websites Network', icon: Globe, desc: 'Network websites directory' },
     { id: 'crypto_wallets', label: 'Crypto & Payment Wallets', icon: Coins, desc: 'BTC, LTC, ETH, USDT, SOL' },
     { id: 'profile', label: 'Profile Details', icon: UserCheck, desc: 'Name, title, company, bio' },
@@ -376,7 +382,7 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
                   Admin Control Panel
                 </h1>
                 <span className="hidden min-[500px]:inline px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30">
-                  ● Live Analytics Mode
+                  ● Firebase Cloud Synced
                 </span>
               </div>
               <p className="text-[10px] text-slate-400 flex items-center gap-1.5">
@@ -793,6 +799,33 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
                 </div>
               );
             })()}
+
+            {/* FEATURE: Dynamic Metadata & OpenGraph Social Sharing Manager */}
+            {activeTab === 'metadata_manager' && (
+              <AdminMetadataTab 
+                profile={editedProfile} 
+                onUpdateProfile={setEditedProfile} 
+                onSave={handleSaveAll} 
+              />
+            )}
+
+            {/* FEATURE: Auto Dynamic Sitemap & Robots.txt Manager */}
+            {activeTab === 'seo_sitemap' && (
+              <AdminSeoTab 
+                profile={editedProfile} 
+                onUpdateProfile={setEditedProfile} 
+                onSave={handleSaveAll} 
+              />
+            )}
+
+            {/* FEATURE: Donation & Support Manager */}
+            {activeTab === 'donations' && (
+              <AdminDonationTab 
+                profile={editedProfile} 
+                onUpdateProfile={setEditedProfile} 
+                onSave={handleSaveAll} 
+              />
+            )}
 
             {/* FEATURE: Crypto & Payment Wallets Manager */}
             {activeTab === 'crypto_wallets' && (() => {

@@ -1,0 +1,24 @@
+# Robots.txt - Auto-Generated for Optimal Search Engine Indexing
+# Supports Googlebot, Bingbot, Applebot, DuckDuckBot, Yandex, Baidu
+
+User-agent: *
+Allow: /
+Allow: /sitemap.xml
+Allow: /assets/
+Disallow: /api/
+Disallow: /admin
+Disallow: /#admin
+Crawl-delay: 1
+
+# Googlebot specific directives
+User-agent: Googlebot
+Allow: /
+Allow: /#portfolio
+Allow: /#websites
+Allow: /#socials
+Allow: /#donate
+Disallow: /api/
+
+# Canonical XML Sitemap
+Sitemap: https://ais-dev-oku4uv6zogg3mmlz4shy7i-531035740823.asia-southeast1.run.app/sitemap.xml
+Host: https://ais-dev-oku4uv6zogg3mmlz4shy7i-531035740823.asia-southeast1.run.app

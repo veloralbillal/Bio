@@ -4,6 +4,7 @@ import {
   Download, RefreshCw, Send, CheckCircle2, ShieldCheck, 
   Link2, Code, FileText, Zap, ExternalLink 
 } from 'lucide-react';
+import { generateSitemapXml, generateRobotsTxt, triggerFileDownload } from '../js/seoGenerator';
 
 export default function SEOHead({ isOpen, onClose, seoData, profile }) {
   const [activePreviewTab, setActivePreviewTab] = useState('google');
@@ -15,6 +16,12 @@ export default function SEOHead({ isOpen, onClose, seoData, profile }) {
   const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://gravatar-hub.app';
   const sitemapUrl = `${currentOrigin}/sitemap.xml`;
   const robotsUrl = `${currentOrigin}/robots.txt`;
+
+  const dynamicSitemapXml = generateSitemapXml(profile, currentOrigin);
+  const dynamicRobotsTxt = generateRobotsTxt(currentOrigin);
+
+  const portfolioCount = (profile?.featuredWork || profile?.portfolioItems || []).filter(i => i.enabled !== false).length;
+  const websitesCount = (profile?.websites || []).filter(w => w.enabled !== false).length;
 
   // Get active enabled social links for Google sameAs backlinks
   const activeSocialLinks = (profile?.socialLinks || []).filter(l => l.enabled !== false && l.url);
@@ -257,15 +264,23 @@ export default function SEOHead({ isOpen, onClose, seoData, profile }) {
         {activePreviewTab === 'sitemap' && (
           <div className="space-y-4">
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <div>
                   <h4 className="text-xs font-bold text-white flex items-center gap-2">
                     <FileText className="w-4 h-4 text-emerald-400" />
-                    <span>Auto-Generated XML Sitemap Endpoint</span>
+                    <span>Auto-Generated XML Sitemap ({portfolioCount} Projects, {websitesCount} Websites)</span>
                   </h4>
                   <p className="text-[10px] text-slate-400">Available live at {sitemapUrl}</p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => triggerFileDownload(dynamicSitemapXml, 'sitemap.xml', 'application/xml')}
+                    className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs flex items-center gap-1 font-semibold"
+                    title="Download sitemap.xml file"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Download</span>
+                  </button>
                   <button
                     onClick={() => handleCopy(sitemapUrl)}
                     className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs flex items-center gap-1 font-semibold"
@@ -286,21 +301,14 @@ export default function SEOHead({ isOpen, onClose, seoData, profile }) {
               </div>
 
               {/* Sitemap Code Preview */}
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-emerald-300 overflow-x-auto max-h-36 no-scrollbar">
-                <pre>{`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>${currentOrigin}/</loc><priority>1.0</priority></url>
-  <url><loc>${currentOrigin}/#socials</loc><priority>0.9</priority></url>
-  <url><loc>${currentOrigin}/#projects</loc><priority>0.8</priority></url>
-  <url><loc>${currentOrigin}/#contact</loc><priority>0.8</priority></url>
-  <!-- ${activeSocialLinks.length} Social Profiles Included -->
-</urlset>`}</pre>
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-emerald-300 overflow-x-auto max-h-48 no-scrollbar">
+                <pre>{dynamicSitemapXml}</pre>
               </div>
             </div>
 
             {/* Robots.txt Preview */}
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <div>
                   <h4 className="text-xs font-bold text-white flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-indigo-400" />
@@ -308,24 +316,29 @@ export default function SEOHead({ isOpen, onClose, seoData, profile }) {
                   </h4>
                   <p className="text-[10px] text-slate-400">Instructs Googlebot to index all public content and sitemaps</p>
                 </div>
-                <a
-                  href="./robots.txt"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-xl bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 border border-indigo-500/30 text-xs flex items-center gap-1 font-bold"
-                >
-                  <span>View Robots.txt</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => triggerFileDownload(dynamicRobotsTxt, 'robots.txt', 'text/plain')}
+                    className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs flex items-center gap-1 font-semibold"
+                    title="Download robots.txt file"
+                  >
+                    <Download className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Download</span>
+                  </button>
+                  <a
+                    href="./robots.txt"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-xl bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 border border-indigo-500/30 text-xs flex items-center gap-1 font-bold"
+                  >
+                    <span>View Robots.txt</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-indigo-300">
-                <pre>{`User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /admin
-
-Sitemap: ${sitemapUrl}`}</pre>
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-indigo-300 overflow-x-auto max-h-36 no-scrollbar">
+                <pre>{dynamicRobotsTxt}</pre>
               </div>
             </div>
           </div>

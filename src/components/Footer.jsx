@@ -1,7 +1,7 @@
 import React from 'react';
-import { ShieldCheck, Heart, Sparkles, Lock, Globe } from 'lucide-react';
+import { ShieldCheck, Heart, Sparkles, Lock, Globe, Coffee } from 'lucide-react';
 
-export default function Footer({ profile, onOpenAdminAuth }) {
+export default function Footer({ profile, onOpenAdminAuth, onOpenDonate }) {
   const brandName = profile?.footerBrandName || profile?.headerBrandName || "Gravatar Profile Hub";
 
   return (
@@ -18,8 +18,18 @@ export default function Footer({ profile, onOpenAdminAuth }) {
           <span>© {new Date().getFullYear()} • {profile?.name || 'Billal Hossen'}</span>
         </div>
 
-        {/* System Status & Hidden Lock Trigger */}
+        {/* System Status, Donate link & Hidden Lock Trigger */}
         <div className="flex items-center gap-3">
+          {profile?.donationConfig?.enabled !== false && (
+            <button
+              onClick={onOpenDonate}
+              className="flex items-center gap-1 text-xs font-semibold text-rose-500 hover:text-rose-600 dark:text-rose-400 transition-colors"
+            >
+              <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+              <span>Support & Donate</span>
+            </button>
+          )}
+
           <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 font-semibold text-[11px]">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             Verified Online

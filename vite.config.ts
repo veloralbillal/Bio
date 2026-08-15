@@ -6,7 +6,8 @@ import expressApp from './server.js';
 
 export default defineConfig(({ command }) => {
   return {
-    base: command === 'serve' ? '/' : (process.env.BASE_PATH || (process.env.GITHUB_REPOSITORY ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/` : '/Bio/')),
+    // Auto-adaptive base path: defaults to './' for universal root & subdirectory hosting (GitHub Pages, cPanel, Vercel, Netlify)
+    base: process.env.BASE_PATH || './',
     plugins: [
       react(),
       tailwindcss(),

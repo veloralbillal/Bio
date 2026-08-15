@@ -381,5 +381,113 @@ export const initialProfileData = {
       enabled: true,
       note: "Instant low-cost Solana transfers."
     }
-  ]
+  ],
+
+  // Donation & Support Configuration
+  donationConfig: {
+    enabled: true,
+    title: "Support & Sponsor My Work",
+    subtitle: "Help keep open-source education, tech tutorials, and developer tools accessible to everyone worldwide.",
+    message: "Thank you for considering supporting my work! Every single contribution directly helps me create in-depth tech guides, maintain open-source software, and keep community resources free.",
+    goal: {
+      enabled: true,
+      title: "Monthly Community Education & Hosting Goal",
+      currentAmount: 185,
+      targetAmount: 500,
+      currency: "$"
+    },
+    platforms: {
+      buymeacoffee: {
+        enabled: true,
+        username: "veloralbillal",
+        url: "https://buymeacoffee.com/veloralbillal",
+        label: "Buy Me a Coffee",
+        note: "Support with a $3 coffee or one-time tip"
+      },
+      paypal: {
+        enabled: true,
+        username: "veloralbillal",
+        url: "https://paypal.me/veloralbillal",
+        label: "PayPal",
+        note: "Direct instant donation via PayPal or Credit Card"
+      },
+      kofi: {
+        enabled: true,
+        username: "veloralbillal",
+        url: "https://ko-fi.com/veloralbillal",
+        label: "Ko-fi",
+        note: "Support with 0% platform fee"
+      },
+      githubSponsors: {
+        enabled: true,
+        username: "billal-hossen",
+        url: "https://github.com/sponsors/billal-hossen",
+        label: "GitHub Sponsors",
+        note: "Sponsor open-source dev repositories directly"
+      },
+      patreon: {
+        enabled: false,
+        username: "veloralbillal",
+        url: "https://patreon.com/veloralbillal",
+        label: "Patreon",
+        note: "Monthly membership with exclusive community perks"
+      },
+      customLink: {
+        enabled: false,
+        label: "Custom Sponsor Portal",
+        url: "",
+        note: "Stripe, Razorpay, or OpenCollective support"
+      }
+    },
+    localPayment: {
+      enabled: true,
+      title: "Local Mobile Banking (Bangladesh)",
+      note: "Send Money (Personal) with your name as reference",
+      bkash: {
+        number: "01700-000000",
+        type: "Personal",
+        enabled: true
+      },
+      nagad: {
+        number: "01700-000000",
+        type: "Personal",
+        enabled: true
+      },
+      rocket: {
+        number: "01700-000000-0",
+        type: "Personal",
+        enabled: false
+      }
+    },
+    presetTiers: [
+      {
+        id: "tier_1",
+        amount: 3,
+        currency: "$",
+        label: "Buy a Coffee ☕",
+        desc: "A quick token of appreciation for open tutorials and free tools."
+      },
+      {
+        id: "tier_2",
+        amount: 10,
+        currency: "$",
+        label: "Tech Book & Tools 📖",
+        desc: "Help fund programming books, subscriptions, and code research."
+      },
+      {
+        id: "tier_3",
+        amount: 25,
+        currency: "$",
+        label: "Server & Hosting 🚀",
+        desc: "Covers monthly cloud hosting, testing clusters, and domains."
+      },
+      {
+        id: "tier_4",
+        amount: 50,
+        currency: "$",
+        label: "Golden Sponsor ⭐",
+        desc: "Special shoutout in open-source READMEs and website credits."
+      }
+    ]
+  }
 };

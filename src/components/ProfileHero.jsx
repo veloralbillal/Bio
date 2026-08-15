@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { 
   CheckCircle2, MapPin, Briefcase, 
   Copy, Check, Share2, Sparkles, ShieldCheck, Heart, ExternalLink, QrCode, Search, Coins
 } from 'lucide-react';
+import { fadeInUp } from '../js/motionVariants';
 
-export default function ProfileHero({ profile, onOpenQR, onContactClick, onOpenCrypto }) {
+export default function ProfileHero({ profile, onOpenQR, onContactClick, onOpenCrypto, onOpenDonate }) {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState(false);
 
@@ -17,7 +19,12 @@ export default function ProfileHero({ profile, onOpenQR, onContactClick, onOpenC
   const googleUrl = profile.googleUrl || 'https://google.com';
 
   return (
-    <div className="relative mb-8">
+    <motion.div 
+      variants={fadeInUp}
+      initial="initial"
+      animate="animate"
+      className="relative mb-8"
+    >
       {/* Cover Backdrop Banner */}
       <div className={`h-44 sm:h-56 md:h-64 w-full rounded-3xl overflow-hidden relative shadow-lg ${!profile.coverUrl ? `bg-gradient-to-r ${profile.coverGradient || 'from-[#d9a58b] via-[#e5b7a0] to-[#c69279]'}` : ''}`}>
         {profile.coverUrl && (
@@ -117,6 +124,18 @@ export default function ProfileHero({ profile, onOpenQR, onContactClick, onOpenC
               {/* Primary Action Buttons */}
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-6">
                 
+                {/* Donate & Support Button */}
+                {profile?.donationConfig?.enabled !== false && (
+                  <button
+                    onClick={onOpenDonate}
+                    className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-xs sm:text-sm border border-rose-400/40 shadow-lg shadow-rose-500/20 transition-all duration-300 flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+                    title="Support & Donate (Buy Me a Coffee, PayPal, bKash, Crypto)"
+                  >
+                    <Heart className="w-4 h-4 fill-white text-white animate-pulse" />
+                    <span>Support & Donate</span>
+                  </button>
+                )}
+
                 {/* Crypto Pay / Support Button */}
                 <button
                   onClick={onOpenCrypto}
@@ -171,6 +190,6 @@ export default function ProfileHero({ profile, onOpenQR, onContactClick, onOpenC
 
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

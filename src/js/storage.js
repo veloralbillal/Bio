@@ -1,9 +1,17 @@
 import { initialProfileData } from './initialData.js';
+import {
+  saveProfileToCloud,
+  subscribeToCloudProfile,
+  saveContactMessageToCloud,
+  subscribeToCloudMessages,
+  deleteCloudMessage,
+  markCloudMessageRead,
+  trackCloudAnalytics
+} from './firebaseService.js';
 
 const STORAGE_KEY = 'gravatar_hub_profile_v2';
 const MESSAGES_KEY = 'gravatar_hub_messages_v1';
 const ANALYTICS_KEY = 'gravatar_hub_analytics_v1';
-const ADMIN_TOKEN_KEY = 'gravatar_admin_token';
 
 // Default initial sample messages
 const initialMessages = [
@@ -41,7 +49,6 @@ export function getStoredMessages() {
   } catch (err) {
     console.error('Error reading messages from localStorage:', err);
   }
-  // Initialize with initial messages if empty
   try {
     localStorage.setItem(MESSAGES_KEY, JSON.stringify(initialMessages));
   } catch (e) {}
@@ -52,10 +59,12 @@ export function getStoredMessages() {
 export function saveStoredMessage(newMessage) {
   try {
     const messages = getStoredMessages();
-    // Add to top of array
-    const updated = [newMessage, ...messages];
+    const exists = messages.some(m => m.id === newMessage.id);
+    const updated = exists 
+      ? messages.map(m => m.id === newMessage.id ? { ...m, ...newMessage } : m)
+      : [newMessage, ...messages];
+      
     localStorage.setItem(MESSAGES_KEY, JSON.stringify(updated));
-    // Dispatch global custom event for real-time reactivity
     window.dispatchEvent(new CustomEvent('gravatar_messages_updated', { detail: updated }));
     return newMessage;
   } catch (err) {
@@ -64,16 +73,35 @@ export function saveStoredMessage(newMessage) {
   }
 }
 
-// Delete a message by ID from localStorage
+// Delete a message by ID from localStorage and Firebase Cloud
 export function deleteStoredMessage(messageId) {
   try {
     const messages = getStoredMessages();
     const updated = messages.filter(m => m.id !== messageId);
     localStorage.setItem(MESSAGES_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('gravatar_messages_updated', { detail: updated }));
+    
+    // Also delete from Firebase Cloud
+    deleteCloudMessage(messageId);
     return updated;
   } catch (err) {
     console.error('Error deleting message:', err);
+    return [];
+  }
+}
+
+// Mark message as read
+export function markMessageAsRead(messageId) {
+  try {
+    const messages = getStoredMessages();
+    const updated = messages.map(m => m.id === messageId ? { ...m, read: true } : m);
+    localStorage.setItem(MESSAGES_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('gravatar_messages_updated', { detail: updated }));
+    
+    // Also update in Firebase Cloud
+    markCloudMessageRead(messageId);
+    return updated;
+  } catch (err) {
     return [];
   }
 }
@@ -92,26 +120,64 @@ export function loadProfileData() {
   return initialProfileData;
 }
 
-// Save profile data to localStorage and optionally sync to backend API
+// Save profile data to localStorage, Firebase Cloud, and API
 export function saveProfileData(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     window.dispatchEvent(new CustomEvent('gravatar_profile_updated', { detail: data }));
-    // Post to server if API is available
+    
+    // 1. Sync directly to Firebase Firestore & RTDB Cloud
+    saveProfileToCloud(data);
+
+    // 2. Post to server if Express API is available
     fetch('/api/admin/profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
-    }).catch(err => console.log('API sync skipped:', err));
+    }).catch(() => {});
   } catch (err) {
-    console.error('Error saving to localStorage:', err);
+    console.error('Error saving profile data:', err);
   }
 }
 
-// Send Contact Message (Saves locally AND sends to API)
+// Initialize Realtime Cloud synchronization listeners
+export function initCloudSync(onProfileUpdate, onMessagesUpdate) {
+  // Listen for Cloud Profile changes
+  const unsubProfile = subscribeToCloudProfile((cloudProfile) => {
+    if (cloudProfile) {
+      const merged = { ...loadProfileData(), ...cloudProfile };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      window.dispatchEvent(new CustomEvent('gravatar_profile_updated', { detail: merged }));
+      if (onProfileUpdate) onProfileUpdate(merged);
+    }
+  });
+
+  // Listen for Cloud Messages changes
+  const unsubMessages = subscribeToCloudMessages((cloudMessages) => {
+    if (cloudMessages && cloudMessages.length > 0) {
+      const local = getStoredMessages();
+      // Merge unique messages
+      const map = new Map();
+      [...cloudMessages, ...local].forEach(m => {
+        if (!map.has(m.id)) map.set(m.id, m);
+      });
+      const merged = Array.from(map.values()).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      localStorage.setItem(MESSAGES_KEY, JSON.stringify(merged));
+      window.dispatchEvent(new CustomEvent('gravatar_messages_updated', { detail: merged }));
+      if (onMessagesUpdate) onMessagesUpdate(merged);
+    }
+  });
+
+  return () => {
+    unsubProfile?.();
+    unsubMessages?.();
+  };
+}
+
+// Send Contact Message (Saves locally, pushes to Firebase Cloud, and API)
 export async function sendContactMessage(formData) {
   const newMessage = {
-    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
     name: formData.name,
     email: formData.email,
     subject: formData.subject || 'New Direct Contact Message',
@@ -122,38 +188,35 @@ export async function sendContactMessage(formData) {
     read: false
   };
 
-  // 1. ALWAYS store locally first so messages are never lost in client or offline
+  // 1. Store locally for immediate responsiveness
   saveStoredMessage(newMessage);
 
-  // 2. Also try API endpoint sync to backend server
+  // 2. Save directly to Firebase Firestore & RTDB Cloud
+  const cloudRes = await saveContactMessageToCloud(newMessage);
+  if (cloudRes.success && cloudRes.id) {
+    newMessage.firebaseId = cloudRes.id;
+  }
+
+  // 3. Also post to backend server if online
   try {
-    const response = await fetch('/api/contact', {
+    fetch('/api/contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData)
-    });
-    if (response.ok) {
-      const resData = await response.json();
-      if (resData.success) {
-        return resData;
-      }
-    }
-  } catch (err) {
-    console.warn('Backend API offline, saved message in local state:', err);
-  }
+    }).catch(() => {});
+  } catch (err) {}
 
   return {
     success: true,
-    message: 'Message delivered directly and saved for billalhossen.self@gmail.com!',
+    message: 'Message delivered to Cloud & saved for billalhossen.self@gmail.com!',
     details: newMessage
   };
 }
 
-// Track page views and link clicks locally and via API
+// Track page views and link clicks locally and in Firebase Analytics
 export function trackEvent(event, label) {
   try {
     const isMobile = window.innerWidth < 768;
-    // Local analytics tracker
     const raw = localStorage.getItem(ANALYTICS_KEY);
     let stats = raw ? JSON.parse(raw) : { views: 240, clicks: {}, recentLogs: [] };
     
@@ -174,7 +237,10 @@ export function trackEvent(event, label) {
     localStorage.setItem(ANALYTICS_KEY, JSON.stringify(stats));
     window.dispatchEvent(new CustomEvent('gravatar_analytics_updated', { detail: stats }));
 
-    // Async server track
+    // Firebase Cloud Analytics & Firestore tracking
+    trackCloudAnalytics(event, label, isMobile ? 'mobile' : 'desktop');
+
+    // Async server tracking
     fetch('/api/analytics/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -184,9 +250,7 @@ export function trackEvent(event, label) {
         device: isMobile ? 'mobile' : 'desktop'
       })
     }).catch(() => {});
-  } catch (err) {
-    // Ignore analytics tracking errors
-  }
+  } catch (err) {}
 }
 
 // Generate vCard string for contact download
