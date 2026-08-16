@@ -2,6 +2,7 @@ import { initialProfileData } from './initialData.js';
 import {
   saveProfileToCloud,
   subscribeToCloudProfile,
+  fetchProfileFromCloud,
   saveContactMessageToCloud,
   subscribeToCloudMessages,
   deleteCloudMessage,
@@ -121,13 +122,13 @@ export function loadProfileData() {
 }
 
 // Save profile data to localStorage, Firebase Cloud, and API
-export function saveProfileData(data) {
+export async function saveProfileData(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     window.dispatchEvent(new CustomEvent('gravatar_profile_updated', { detail: data }));
     
     // 1. Sync directly to Firebase Firestore & RTDB Cloud
-    saveProfileToCloud(data);
+    const cloudRes = await saveProfileToCloud(data);
 
     // 2. Post to server if Express API is available
     fetch('/api/admin/profile', {
@@ -135,16 +136,31 @@ export function saveProfileData(data) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     }).catch(() => {});
+
+    return cloudRes;
   } catch (err) {
     console.error('Error saving profile data:', err);
+    return { success: false, error: err.message };
   }
 }
 
-// Initialize Realtime Cloud synchronization listeners
+// Initialize Realtime Cloud synchronization listeners and proactive fetch
 export function initCloudSync(onProfileUpdate, onMessagesUpdate) {
-  // Listen for Cloud Profile changes
+  let isMounted = true;
+
+  // 1. Proactive immediate cloud fetch on boot
+  fetchProfileFromCloud().then((res) => {
+    if (isMounted && res.success && res.data) {
+      const merged = { ...loadProfileData(), ...res.data };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      window.dispatchEvent(new CustomEvent('gravatar_profile_updated', { detail: merged }));
+      if (onProfileUpdate) onProfileUpdate(merged);
+    }
+  }).catch(() => {});
+
+  // 2. Listen for Real-time Cloud Profile changes
   const unsubProfile = subscribeToCloudProfile((cloudProfile) => {
-    if (cloudProfile) {
+    if (isMounted && cloudProfile && typeof cloudProfile === 'object') {
       const merged = { ...loadProfileData(), ...cloudProfile };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
       window.dispatchEvent(new CustomEvent('gravatar_profile_updated', { detail: merged }));
@@ -152,9 +168,9 @@ export function initCloudSync(onProfileUpdate, onMessagesUpdate) {
     }
   });
 
-  // Listen for Cloud Messages changes
+  // 3. Listen for Cloud Messages changes
   const unsubMessages = subscribeToCloudMessages((cloudMessages) => {
-    if (cloudMessages && cloudMessages.length > 0) {
+    if (isMounted && cloudMessages && cloudMessages.length > 0) {
       const local = getStoredMessages();
       // Merge unique messages
       const map = new Map();
@@ -169,6 +185,7 @@ export function initCloudSync(onProfileUpdate, onMessagesUpdate) {
   });
 
   return () => {
+    isMounted = false;
     unsubProfile?.();
     unsubMessages?.();
   };

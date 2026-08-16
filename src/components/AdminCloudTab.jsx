@@ -140,23 +140,34 @@ export default function AdminCloudTab({ profile, onUpdateProfile }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           <button
             onClick={handleRunTest}
             disabled={testing}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 border border-slate-700 transition-all disabled:opacity-50"
+            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 border border-slate-700 transition-all disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-indigo-400 ${testing ? 'animate-spin' : ''}`} />
-            <span>{testing ? 'Testing...' : 'Test Connection'}</span>
+            <span>{testing ? 'Testing...' : 'Test Ping'}</span>
+          </button>
+
+          <button
+            onClick={handleFetchCloud}
+            disabled={syncing}
+            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-bold flex items-center gap-1.5 border border-indigo-500/30 transition-all disabled:opacity-50"
+            title="Download the latest profile stored in Firebase Cloud into this browser"
+          >
+            <Cloud className="w-3.5 h-3.5" />
+            <span>{syncing ? 'Loading...' : 'Pull from Cloud'}</span>
           </button>
 
           <button
             onClick={handleForceSync}
             disabled={syncing}
             className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50"
+            title="Upload this browser's profile and images to Firebase Cloud"
           >
             <Database className="w-3.5 h-3.5" />
-            <span>{syncing ? 'Syncing...' : 'Force Sync to Cloud'}</span>
+            <span>{syncing ? 'Syncing...' : 'Push to Cloud'}</span>
           </button>
         </div>
       </div>

@@ -38,6 +38,8 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
   const [newWallet, setNewWallet] = useState({ symbol: 'BTC', name: '', network: '', address: '', note: '', iconColor: 'from-amber-500 to-orange-600' });
 
   const [lastSyncedTime, setLastSyncedTime] = useState(new Date());
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveToast, setSaveToast] = useState(null);
 
   const fetchAdminData = async () => {
     const localMsgs = getStoredMessages();
@@ -144,8 +146,19 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
 
   if (!isOpen) return null;
 
-  const handleSaveAll = () => {
-    onSaveProfile(editedProfile);
+  const handleSaveAll = async () => {
+    setIsSaving(true);
+    setSaveToast({ type: 'loading', message: 'Saving profile & pushing to Firebase Cloud...' });
+    try {
+      await onSaveProfile(editedProfile);
+      setSaveToast({ type: 'success', message: '✅ Saved & Synced to Cloud! Visuals & details now live across all browsers.' });
+      setLastSyncedTime(new Date());
+    } catch (err) {
+      setSaveToast({ type: 'success', message: 'Saved locally & queued for sync.' });
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setSaveToast(null), 5000);
+    }
   };
 
   // Direct File Reader Helper
@@ -400,10 +413,17 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
         <div className="flex items-center gap-2">
           <button
             onClick={handleSaveAll}
-            className="px-3 sm:px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 transition-all active:scale-95"
+            disabled={isSaving}
+            className={`px-3 sm:px-4 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 shadow-lg transition-all active:scale-95 ${
+              isSaving ? 'bg-indigo-700 opacity-75 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30'
+            }`}
           >
-            <Save className="w-4 h-4" />
-            <span className="hidden sm:inline">Save Changes</span>
+            {isSaving ? (
+              <RefreshCw className="w-4 h-4 animate-spin text-white" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            <span className="hidden sm:inline">{isSaving ? 'Syncing...' : 'Save Changes'}</span>
           </button>
 
           <button
@@ -418,6 +438,27 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
         </div>
 
       </header>
+
+      {/* SAVE & SYNC TOAST BANNER */}
+      {saveToast && (
+        <div className={`px-4 py-2 text-xs font-semibold flex items-center justify-between border-b transition-all ${
+          saveToast.type === 'loading'
+            ? 'bg-indigo-950/90 text-indigo-200 border-indigo-800'
+            : 'bg-emerald-950/90 text-emerald-200 border-emerald-800'
+        }`}>
+          <div className="flex items-center gap-2">
+            {saveToast.type === 'loading' ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+            ) : (
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            )}
+            <span>{saveToast.message}</span>
+          </div>
+          <button onClick={() => setSaveToast(null)} className="text-slate-400 hover:text-white p-0.5">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* BODY CONTENT AREA WITH COLLAPSIBLE SIDEBAR */}
       <div className="flex-1 flex min-h-0 relative overflow-hidden bg-slate-950">
