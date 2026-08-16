@@ -1,8 +1,8 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics';
 import { 
-  getFirestore, 
-  enableIndexedDbPersistence 
+  initializeFirestore,
+  setLogLevel
 } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 
@@ -17,11 +17,21 @@ export const firebaseConfig = {
   measurementId: "G-XFDC6ZJC8B"
 };
 
-// Initialize Firebase App
-export const app = initializeApp(firebaseConfig);
+// Suppress excessive Firestore backend connection warnings
+try {
+  setLogLevel('silent');
+} catch (e) {
+  // Ignore
+}
 
-// Initialize Firestore
-export const db = getFirestore(app);
+// Initialize Firebase App singleton
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+
+// Initialize Firestore with auto-detect long polling and robust offline fallback
+export const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+  ignoreUndefinedProperties: true
+});
 
 // Initialize Realtime Database
 export const rtdb = getDatabase(app);
@@ -37,3 +47,4 @@ if (typeof window !== 'undefined') {
     // Analytics fallback
   });
 }
+

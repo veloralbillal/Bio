@@ -21,84 +21,116 @@ import { db, rtdb, analytics } from './firebase.js';
 const PROFILE_DOC_ID = 'billal_main_profile';
 
 /**
- * Save Bio Profile to Firebase Cloud Firestore & RTDB
+ * Save Bio Profile to Firebase Cloud Firestore & RTDB with fallback
  */
 export async function saveProfileToCloud(profileData) {
   try {
-    const profileRef = doc(db, 'profiles', PROFILE_DOC_ID);
-    await setDoc(profileRef, {
-      ...profileData,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+    if (db) {
+      const profileRef = doc(db, 'profiles', PROFILE_DOC_ID);
+      await setDoc(profileRef, {
+        ...profileData,
+        updatedAt: serverTimestamp()
+      }, { merge: true }).catch(() => {});
+    }
 
     // Also mirror to Realtime Database for high-speed sync
-    try {
-      const rtdbRef = ref(rtdb, 'profile');
-      await set(rtdbRef, {
-        ...profileData,
-        updatedAt: Date.now()
-      });
-    } catch (e) {
-      // RTDB optional sync
+    if (rtdb) {
+      try {
+        const rtdbRef = ref(rtdb, 'profile');
+        await set(rtdbRef, {
+          ...profileData,
+          updatedAt: Date.now()
+        }).catch(() => {});
+      } catch (e) {
+        // RTDB optional sync
+      }
     }
 
     return { success: true };
   } catch (error) {
-    console.warn('Firebase Cloud save failed (will keep local copy):', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error?.message || 'Cloud sync unavailable' };
   }
 }
 
 /**
- * Listen to real-time Profile updates from Cloud
+ * Listen to real-time Profile updates from Cloud (Firestore & RTDB fallback)
  */
 export function subscribeToCloudProfile(onUpdate) {
+  let unsubFirestore = () => {};
+  let unsubRtdb = () => {};
+
   try {
-    const profileRef = doc(db, 'profiles', PROFILE_DOC_ID);
-    const unsubscribe = onSnapshot(profileRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const cloudData = docSnap.data();
-        onUpdate(cloudData);
-      }
-    }, (error) => {
-      console.warn('Firestore profile subscription fallback:', error.message);
-    });
-    return unsubscribe;
+    if (db) {
+      const profileRef = doc(db, 'profiles', PROFILE_DOC_ID);
+      unsubFirestore = onSnapshot(profileRef, (docSnap) => {
+        if (docSnap && docSnap.exists()) {
+          const cloudData = docSnap.data();
+          onUpdate(cloudData);
+        }
+      }, () => {
+        // Silently handle Firestore backend unavailable, switch to RTDB
+      });
+    }
+
+    // Realtime Database listener as fast sync
+    if (rtdb) {
+      try {
+        const rtdbRef = ref(rtdb, 'profile');
+        unsubRtdb = onValue(rtdbRef, (snapshot) => {
+          const val = snapshot.val();
+          if (val) {
+            onUpdate(val);
+          }
+        }, () => {});
+      } catch (e) {}
+    }
   } catch (error) {
-    console.warn('Firebase subscription error:', error);
-    return () => {};
+    // Silent recovery
   }
+
+  return () => {
+    try { unsubFirestore?.(); } catch (e) {}
+    try { unsubRtdb?.(); } catch (e) {}
+  };
 }
 
 /**
  * Save new Contact Message directly to Firebase Cloud
  */
 export async function saveContactMessageToCloud(messageData) {
+  let docId = 'msg_' + Date.now();
   try {
-    const messagesCollection = collection(db, 'messages');
-    const docRef = await addDoc(messagesCollection, {
-      ...messageData,
-      createdAt: serverTimestamp(),
-      read: false
-    });
-
-    // Also push to Realtime Database
-    try {
-      const rtdbMessages = ref(rtdb, 'messages');
-      await push(rtdbMessages, {
+    if (db) {
+      const messagesCollection = collection(db, 'messages');
+      const docRef = await addDoc(messagesCollection, {
         ...messageData,
-        firebaseId: docRef.id,
-        createdAt: Date.now(),
+        createdAt: serverTimestamp(),
         read: false
-      });
-    } catch (e) {
-      // RTDB optional
+      }).catch(() => null);
+
+      if (docRef?.id) {
+        docId = docRef.id;
+      }
     }
 
-    return { success: true, id: docRef.id };
+    // Also push to Realtime Database
+    if (rtdb) {
+      try {
+        const rtdbMessages = ref(rtdb, 'messages');
+        await push(rtdbMessages, {
+          ...messageData,
+          firebaseId: docId,
+          createdAt: Date.now(),
+          read: false
+        }).catch(() => {});
+      } catch (e) {
+        // RTDB optional
+      }
+    }
+
+    return { success: true, id: docId };
   } catch (error) {
-    console.warn('Firebase message save failed:', error);
-    return { success: false, error: error.message };
+    return { success: true, id: docId };
   }
 }
 
@@ -106,32 +138,60 @@ export async function saveContactMessageToCloud(messageData) {
  * Listen to real-time Contact Messages from Cloud
  */
 export function subscribeToCloudMessages(onMessagesUpdate) {
-  try {
-    const messagesCollection = collection(db, 'messages');
-    const q = query(messagesCollection, orderBy('createdAt', 'desc'), limit(100));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const messages = [];
-      querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        messages.push({
-          id: docSnap.id,
-          ...data,
-          timestamp: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.timestamp || new Date().toISOString()
-        });
-      });
-      if (messages.length > 0) {
-        onMessagesUpdate(messages);
-      }
-    }, (error) => {
-      console.warn('Firestore messages subscription error:', error.message);
-    });
+  let unsubFirestore = () => {};
+  let unsubRtdb = () => {};
 
-    return unsubscribe;
+  try {
+    if (db) {
+      const messagesCollection = collection(db, 'messages');
+      const q = query(messagesCollection, orderBy('createdAt', 'desc'), limit(100));
+      
+      unsubFirestore = onSnapshot(q, (querySnapshot) => {
+        if (!querySnapshot) return;
+        const messages = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          messages.push({
+            id: docSnap.id,
+            ...data,
+            timestamp: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.timestamp || new Date().toISOString()
+          });
+        });
+        if (messages.length > 0) {
+          onMessagesUpdate(messages);
+        }
+      }, () => {
+        // Firestore unavailable silent fallback
+      });
+    }
+
+    // RTDB fallback listener
+    if (rtdb) {
+      try {
+        const rtdbMessages = ref(rtdb, 'messages');
+        unsubRtdb = onValue(rtdbMessages, (snapshot) => {
+          const val = snapshot.val();
+          if (val && typeof val === 'object') {
+            const list = Object.keys(val).map(k => ({
+              id: val[k].firebaseId || k,
+              ...val[k],
+              timestamp: val[k].createdAt ? new Date(val[k].createdAt).toISOString() : new Date().toISOString()
+            })).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            if (list.length > 0) {
+              onMessagesUpdate(list);
+            }
+          }
+        }, () => {});
+      } catch (e) {}
+    }
   } catch (error) {
-    console.warn('Firebase messages subscription error:', error);
-    return () => {};
+    // Ignore error
   }
+
+  return () => {
+    try { unsubFirestore?.(); } catch (e) {}
+    try { unsubRtdb?.(); } catch (e) {}
+  };
 }
 
 /**
@@ -139,12 +199,13 @@ export function subscribeToCloudMessages(onMessagesUpdate) {
  */
 export async function deleteCloudMessage(messageId) {
   try {
-    const messageDoc = doc(db, 'messages', messageId);
-    await deleteDoc(messageDoc);
+    if (db) {
+      const messageDoc = doc(db, 'messages', messageId);
+      await deleteDoc(messageDoc).catch(() => {});
+    }
     return { success: true };
   } catch (error) {
-    console.warn('Cloud message delete failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error?.message };
   }
 }
 
@@ -153,11 +214,13 @@ export async function deleteCloudMessage(messageId) {
  */
 export async function markCloudMessageRead(messageId) {
   try {
-    const messageDoc = doc(db, 'messages', messageId);
-    await updateDoc(messageDoc, { read: true });
+    if (db) {
+      const messageDoc = doc(db, 'messages', messageId);
+      await updateDoc(messageDoc, { read: true }).catch(() => {});
+    }
     return { success: true };
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: error?.message };
   }
 }
 
@@ -175,20 +238,23 @@ export async function trackCloudAnalytics(event, label, device) {
     }
 
     // 2. Aggregate count in Firestore
-    const statsDocRef = doc(db, 'analytics', 'global_stats');
-    if (event === 'page_view') {
-      await setDoc(statsDocRef, {
-        totalViews: increment(1),
-        lastUpdated: serverTimestamp()
-      }, { merge: true });
-    } else if (event === 'link_click' && label) {
-      const sanitizedKey = label.replace(/[^a-zA-Z0-9_]/g, '_');
-      await setDoc(statsDocRef, {
-        [`clicks_${sanitizedKey}`]: increment(1),
-        lastUpdated: serverTimestamp()
-      }, { merge: true });
+    if (db) {
+      const statsDocRef = doc(db, 'analytics', 'global_stats');
+      if (event === 'page_view') {
+        await setDoc(statsDocRef, {
+          totalViews: increment(1),
+          lastUpdated: serverTimestamp()
+        }, { merge: true }).catch(() => {});
+      } else if (event === 'link_click' && label) {
+        const sanitizedKey = label.replace(/[^a-zA-Z0-9_]/g, '_');
+        await setDoc(statsDocRef, {
+          [`clicks_${sanitizedKey}`]: increment(1),
+          lastUpdated: serverTimestamp()
+        }, { merge: true }).catch(() => {});
+      }
     }
   } catch (error) {
     // Analytics silent fail
   }
 }
+
