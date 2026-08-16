@@ -4,7 +4,6 @@ import {
   getDoc, 
   collection, 
   addDoc, 
-  getDocs, 
   deleteDoc, 
   updateDoc, 
   onSnapshot, 
@@ -14,7 +13,7 @@ import {
   serverTimestamp,
   increment
 } from 'firebase/firestore';
-import { ref, set, push, onValue } from 'firebase/database';
+import { ref, set, push, onValue, get } from 'firebase/database';
 import { logEvent } from 'firebase/analytics';
 import { db, rtdb, analytics } from './firebase.js';
 
@@ -42,7 +41,7 @@ export async function saveProfileToCloud(profileData) {
           updatedAt: Date.now()
         }).catch(() => {});
       } catch (e) {
-        // RTDB optional sync
+        // RTDB sync
       }
     }
 
@@ -50,6 +49,75 @@ export async function saveProfileToCloud(profileData) {
   } catch (error) {
     return { success: false, error: error?.message || 'Cloud sync unavailable' };
   }
+}
+
+/**
+ * Fetch Profile directly from Cloud
+ */
+export async function fetchProfileFromCloud() {
+  try {
+    if (db) {
+      const profileRef = doc(db, 'profiles', PROFILE_DOC_ID);
+      const docSnap = await getDoc(profileRef);
+      if (docSnap.exists()) {
+        return { success: true, data: docSnap.data(), source: 'firestore' };
+      }
+    }
+
+    if (rtdb) {
+      const rtdbRef = ref(rtdb, 'profile');
+      const snapshot = await get(rtdbRef);
+      if (snapshot.exists()) {
+        return { success: true, data: snapshot.val(), source: 'rtdb' };
+      }
+    }
+    return { success: false, error: 'No profile found in cloud' };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Test Firebase Cloud Connection & Latency
+ */
+export async function testCloudConnection() {
+  const startTime = Date.now();
+  let firestoreOk = false;
+  let rtdbOk = false;
+  let errorMessage = '';
+
+  // 1. Test RTDB
+  if (rtdb) {
+    try {
+      const pingRef = ref(rtdb, '_ping');
+      await set(pingRef, { timestamp: Date.now() });
+      rtdbOk = true;
+    } catch (e) {
+      errorMessage = e.message;
+    }
+  }
+
+  // 2. Test Firestore
+  if (db) {
+    try {
+      const pingDoc = doc(db, '_health', 'status');
+      await setDoc(pingDoc, { timestamp: serverTimestamp() }, { merge: true });
+      firestoreOk = true;
+    } catch (e) {
+      if (!errorMessage) errorMessage = e.message;
+    }
+  }
+
+  const latencyMs = Date.now() - startTime;
+  const isConnected = firestoreOk || rtdbOk;
+
+  return {
+    success: isConnected,
+    firestore: firestoreOk,
+    rtdb: rtdbOk,
+    latencyMs,
+    error: isConnected ? null : (errorMessage || 'Connection failed')
+  };
 }
 
 /**
@@ -68,11 +136,10 @@ export function subscribeToCloudProfile(onUpdate) {
           onUpdate(cloudData);
         }
       }, () => {
-        // Silently handle Firestore backend unavailable, switch to RTDB
+        // Silent fallback
       });
     }
 
-    // Realtime Database listener as fast sync
     if (rtdb) {
       try {
         const rtdbRef = ref(rtdb, 'profile');
@@ -95,7 +162,7 @@ export function subscribeToCloudProfile(onUpdate) {
 }
 
 /**
- * Save new Contact Message directly to Firebase Cloud
+ * Save Contact Message to Cloud
  */
 export async function saveContactMessageToCloud(messageData) {
   let docId = 'msg_' + Date.now();
@@ -113,7 +180,6 @@ export async function saveContactMessageToCloud(messageData) {
       }
     }
 
-    // Also push to Realtime Database
     if (rtdb) {
       try {
         const rtdbMessages = ref(rtdb, 'messages');
@@ -123,9 +189,7 @@ export async function saveContactMessageToCloud(messageData) {
           createdAt: Date.now(),
           read: false
         }).catch(() => {});
-      } catch (e) {
-        // RTDB optional
-      }
+      } catch (e) {}
     }
 
     return { success: true, id: docId };
@@ -160,12 +224,9 @@ export function subscribeToCloudMessages(onMessagesUpdate) {
         if (messages.length > 0) {
           onMessagesUpdate(messages);
         }
-      }, () => {
-        // Firestore unavailable silent fallback
-      });
+      }, () => {});
     }
 
-    // RTDB fallback listener
     if (rtdb) {
       try {
         const rtdbMessages = ref(rtdb, 'messages');
@@ -184,9 +245,7 @@ export function subscribeToCloudMessages(onMessagesUpdate) {
         }, () => {});
       } catch (e) {}
     }
-  } catch (error) {
-    // Ignore error
-  }
+  } catch (error) {}
 
   return () => {
     try { unsubFirestore?.(); } catch (e) {}
@@ -195,7 +254,7 @@ export function subscribeToCloudMessages(onMessagesUpdate) {
 }
 
 /**
- * Delete a message from Firebase Cloud
+ * Delete message from Cloud
  */
 export async function deleteCloudMessage(messageId) {
   try {
@@ -210,7 +269,7 @@ export async function deleteCloudMessage(messageId) {
 }
 
 /**
- * Mark a message as read in Firebase Cloud
+ * Mark message as read in Cloud
  */
 export async function markCloudMessageRead(messageId) {
   try {
@@ -225,11 +284,10 @@ export async function markCloudMessageRead(messageId) {
 }
 
 /**
- * Track events to Firebase Analytics and Firestore Analytics Collection
+ * Track analytics to Firebase
  */
 export async function trackCloudAnalytics(event, label, device) {
   try {
-    // 1. Google Analytics 4 event
     if (analytics) {
       logEvent(analytics, event, {
         item_name: label,
@@ -237,7 +295,6 @@ export async function trackCloudAnalytics(event, label, device) {
       });
     }
 
-    // 2. Aggregate count in Firestore
     if (db) {
       const statsDocRef = doc(db, 'analytics', 'global_stats');
       if (event === 'page_view') {
@@ -253,8 +310,5 @@ export async function trackCloudAnalytics(event, label, device) {
         }, { merge: true }).catch(() => {});
       }
     }
-  } catch (error) {
-    // Analytics silent fail
-  }
+  } catch (error) {}
 }
-

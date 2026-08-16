@@ -7,13 +7,14 @@ import {
   Activity, TrendingUp, Users, MousePointer, ExternalLink, Sparkles,
   Upload, Github, Linkedin, Twitter, Youtube, Facebook, Instagram,
   Send, PhoneCall, Music, BookOpen, Dribbble, MessageSquare, Code, Filter,
-  Coins, QrCode, Wallet, Heart, FileText, FileCode
+  Coins, QrCode, Wallet, Heart, FileText, FileCode, Cloud
 } from 'lucide-react';
 import { PREDEFINED_NETWORKS } from '../js/predefinedNetworks';
 import { getStoredMessages, deleteStoredMessage } from '../js/storage';
 import AdminDonationTab from './AdminDonationTab';
 import AdminSeoTab from './AdminSeoTab';
 import AdminMetadataTab from './AdminMetadataTab';
+import AdminCloudTab from './AdminCloudTab';
 
 export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) {
   const [activeTab, setActiveTab] = useState('homepage_analysis');
@@ -341,6 +342,7 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
 
   const sidebarTabs = [
     { id: 'homepage_analysis', label: 'Homepage Analysis', icon: Activity, desc: 'Traffic, clicks & engagement' },
+    { id: 'cloud_sync', label: 'Cloud Sync & Firebase', icon: Cloud, desc: 'Realtime sync, connection test & API keys' },
     { id: 'metadata_manager', label: 'Dynamic Metadata & OG', icon: FileCode, desc: 'Meta tags, titles & social share cards' },
     { id: 'seo_sitemap', label: 'Auto Sitemap & Robots.txt', icon: FileText, desc: 'Dynamic XML sitemap & search indexing' },
     { id: 'donations', label: 'Donation & Support Control', icon: Heart, desc: 'Buy Me a Coffee, PayPal, bKash & Goals' },
@@ -799,6 +801,14 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
                 </div>
               );
             })()}
+
+            {/* FEATURE: Firebase Cloud Sync & Secrets Center */}
+            {activeTab === 'cloud_sync' && (
+              <AdminCloudTab 
+                profile={editedProfile} 
+                onUpdateProfile={setEditedProfile} 
+              />
+            )}
 
             {/* FEATURE: Dynamic Metadata & OpenGraph Social Sharing Manager */}
             {activeTab === 'metadata_manager' && (

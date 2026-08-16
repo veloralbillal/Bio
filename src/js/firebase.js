@@ -1,21 +1,10 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics';
-import { 
-  initializeFirestore,
-  setLogLevel
-} from 'firebase/firestore';
+import { initializeFirestore, setLogLevel } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
+import { getFirebaseConfig } from './firebaseConfigManager.js';
 
-export const firebaseConfig = {
-  apiKey: "AIzaSyD6X4-KjTb521bDzZjQFd-jbphNil7XAjo",
-  authDomain: "veloralbillal.firebaseapp.com",
-  databaseURL: "https://veloralbillal-default-rtdb.firebaseio.com",
-  projectId: "veloralbillal",
-  storageBucket: "veloralbillal.firebasestorage.app",
-  messagingSenderId: "657968912821",
-  appId: "1:657968912821:web:83d69a4ffb20536dcb61fc",
-  measurementId: "G-XFDC6ZJC8B"
-};
+export const firebaseConfig = getFirebaseConfig();
 
 // Suppress excessive Firestore backend connection warnings
 try {
@@ -47,4 +36,3 @@ if (typeof window !== 'undefined') {
     // Analytics fallback
   });
 }
-
