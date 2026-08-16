@@ -16,6 +16,9 @@ export default class ErrorBoundary extends React.Component {
   }
 
   handleReload = () => {
+    try {
+      window.sessionStorage.clear();
+    } catch (e) {}
     window.location.reload();
   };
 

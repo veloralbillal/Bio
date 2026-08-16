@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
 import ProfileHero from './components/ProfileHero';
@@ -7,18 +7,19 @@ import PortfolioSection from './components/PortfolioSection';
 import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import LoadingFallback from './components/LoadingFallback';
+import AdminAuthModal from './components/AdminAuthModal';
+import QRCodeModal from './components/QRCodeModal';
+import SEOHead from './components/SEOHead';
+import MenuModal from './components/MenuModal';
+import { lazyWithRetry } from './js/lazyWithRetry';
 import { loadProfileData, saveProfileData, trackEvent, initCloudSync } from './js/storage';
 import { applyDynamicMetadata } from './js/metadataManager';
 import { pageTransition } from './js/motionVariants';
 
-// Code-splitting via React.lazy for Admin and secondary heavy views/modals
-const AdminPanel = lazy(() => import('./components/AdminPanel'));
-const AdminAuthModal = lazy(() => import('./components/AdminAuthModal'));
-const CryptoPaymentPage = lazy(() => import('./components/CryptoPaymentPage'));
-const DonatePage = lazy(() => import('./components/DonatePage'));
-const QRCodeModal = lazy(() => import('./components/QRCodeModal'));
-const SEOHead = lazy(() => import('./components/SEOHead'));
-const MenuModal = lazy(() => import('./components/MenuModal'));
+// Safe lazy loading with auto-retry for secondary standalone views
+const AdminPanel = lazyWithRetry(() => import('./components/AdminPanel'));
+const CryptoPaymentPage = lazyWithRetry(() => import('./components/CryptoPaymentPage'));
+const DonatePage = lazyWithRetry(() => import('./components/DonatePage'));
 
 export default function App() {
   const [profile, setProfile] = useState(() => loadProfileData());
