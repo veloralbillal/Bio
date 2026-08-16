@@ -15,6 +15,7 @@ import AdminDonationTab from './AdminDonationTab';
 import AdminSeoTab from './AdminSeoTab';
 import AdminMetadataTab from './AdminMetadataTab';
 import AdminCloudTab from './AdminCloudTab';
+import { handleOptimizedUpload } from '../js/imageOptimizer';
 
 export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) {
   const [activeTab, setActiveTab] = useState('homepage_analysis');
@@ -1220,7 +1221,7 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => handleFileUpload(e, (url) => setEditedProfile({ ...editedProfile, coverUrl: url }))}
+                          onChange={(e) => handleOptimizedUpload(e, 'banner', (url) => setEditedProfile({ ...editedProfile, coverUrl: url }))}
                           className="hidden"
                         />
                       </label>
@@ -1271,7 +1272,7 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => handleFileUpload(e, (url) => setEditedProfile({ ...editedProfile, avatarUrl: url }))}
+                          onChange={(e) => handleOptimizedUpload(e, 'avatar', (url) => setEditedProfile({ ...editedProfile, avatarUrl: url }))}
                           className="hidden"
                         />
                       </label>
@@ -1656,7 +1657,7 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => handleFileUpload(e, (url) => setNewProject({ ...newProject, image: url }))}
+                          onChange={(e) => handleOptimizedUpload(e, 'project', (url) => setNewProject({ ...newProject, image: url }))}
                           className="hidden"
                         />
                       </label>
@@ -1699,7 +1700,7 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
                           <input
                             type="file"
                             accept="image/*"
-                            onChange={(e) => handleFileUpload(e, (url) => {
+                            onChange={(e) => handleOptimizedUpload(e, 'project', (url) => {
                               const updatedProjs = editedProfile.projects.map(p => p.id === proj.id ? { ...p, image: url } : p);
                               setEditedProfile({ ...editedProfile, projects: updatedProjs });
                             })}

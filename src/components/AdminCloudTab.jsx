@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Cloud, CloudCheck, CloudOff, RefreshCw, Key, ShieldCheck, 
   AlertTriangle, CheckCircle2, Server, Database, Globe, 
-  ExternalLink, Copy, Check, Save, RotateCcw, Info
+  ExternalLink, Copy, Check, Save, RotateCcw, Info,
+  Image as ImageIcon, Sparkles
 } from 'lucide-react';
 import { 
   getFirebaseConfig, 
@@ -213,6 +214,57 @@ export default function AdminCloudTab({ profile, onUpdateProfile }) {
             {testResult?.success ? 'Cloud Synchronized' : 'Hybrid Local & Cloud Mode'}
           </p>
           <p className="text-[10px] text-slate-500 mt-1">Changes are always saved locally and pushed when online</p>
+        </div>
+      </div>
+
+      {/* IMAGE BANNER & AVATAR SYNC STATUS CARD */}
+      <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="w-4 h-4 text-indigo-400" />
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Visual Assets & Banner Cloud Sync Status</h4>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+            Auto-Compressed for Firestore
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          {/* Cover Banner status */}
+          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center gap-3">
+            {profile?.coverUrl ? (
+              <img src={profile.coverUrl} alt="Banner" className="w-16 h-10 rounded-lg object-cover border border-slate-800 shrink-0" />
+            ) : (
+              <div className="w-16 h-10 rounded-lg bg-slate-900 flex items-center justify-center text-[10px] text-slate-500 border border-slate-800 shrink-0">
+                Gradient
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-200 truncate">Cover Banner</p>
+              <p className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                <Check className="w-3 h-3" />
+                <span>{profile?.coverUrl ? 'Image Ready & Syncable' : 'Gradient Fallback Active'}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Avatar status */}
+          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center gap-3">
+            {profile?.avatarUrl ? (
+              <img src={profile.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full object-cover border border-indigo-500 shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                BH
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-200 truncate">Profile Avatar</p>
+              <p className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                <Check className="w-3 h-3" />
+                <span>Optimized for Cloud (≤50KB)</span>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 

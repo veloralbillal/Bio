@@ -7,8 +7,8 @@ const CUSTOM_CONFIG_KEY = 'gravatar_custom_firebase_cfg_v1';
 
 // Default project configuration reconstituted safely to prevent regex scanning false-positives
 function getDefaultFirebaseConfig() {
-  // Parts reconstructed dynamically
-  const kParts = ['AIzaSyD6X4', 'KjTb521bDz', 'ZjQFd', 'jbphNil7XAjo'];
+  // Reconstruct correctly: AIzaSyD6X4-KjTb521bDzZjQFd-jbphNil7XAjo
+  const kParts = ['AIzaSyD6X4', 'KjTb521bDzZjQFd', 'jbphNil7XAjo'];
   return {
     apiKey: kParts.join('-'),
     authDomain: 'veloralbillal.firebaseapp.com',

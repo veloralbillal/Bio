@@ -16,39 +16,95 @@ import {
 import { ref, set, push, onValue, get } from 'firebase/database';
 import { logEvent } from 'firebase/analytics';
 import { db, rtdb, analytics } from './firebase.js';
+import { optimizeImage } from './imageOptimizer.js';
 
 const PROFILE_DOC_ID = 'billal_main_profile';
+
+/**
+ * Sanitize & Compress oversized images in profileData payload before cloud sync
+ */
+async function prepareProfilePayload(data) {
+  if (!data || typeof data !== 'object') return {};
+  const payload = { ...data };
+
+  // 1. Optimize Avatar if it is a large base64 string
+  if (typeof payload.avatarUrl === 'string' && payload.avatarUrl.startsWith('data:image') && payload.avatarUrl.length > 200000) {
+    try {
+      payload.avatarUrl = await optimizeImage(payload.avatarUrl, { maxWidth: 400, maxHeight: 400, quality: 0.82 });
+    } catch (e) {}
+  }
+
+  // 2. Optimize Cover if it is a large base64 string
+  if (typeof payload.coverUrl === 'string' && payload.coverUrl.startsWith('data:image') && payload.coverUrl.length > 300000) {
+    try {
+      payload.coverUrl = await optimizeImage(payload.coverUrl, { maxWidth: 1200, maxHeight: 600, quality: 0.80 });
+    } catch (e) {}
+  }
+
+  // 3. Optimize Project Images
+  if (Array.isArray(payload.projects)) {
+    payload.projects = await Promise.all(payload.projects.map(async (proj) => {
+      if (proj && typeof proj.image === 'string' && proj.image.startsWith('data:image') && proj.image.length > 200000) {
+        try {
+          const opt = await optimizeImage(proj.image, { maxWidth: 800, maxHeight: 600, quality: 0.80 });
+          return { ...proj, image: opt };
+        } catch (e) {
+          return proj;
+        }
+      }
+      return proj;
+    }));
+  }
+
+  return payload;
+}
 
 /**
  * Save Bio Profile to Firebase Cloud Firestore & RTDB with fallback
  */
 export async function saveProfileToCloud(profileData) {
-  try {
-    if (db) {
+  let firestoreOk = false;
+  let rtdbOk = false;
+  let lastErr = null;
+
+  // Prepare & optimize payload (compress large base64 banner/avatar)
+  const preparedData = await prepareProfilePayload(profileData);
+
+  // 1. Sync to Firestore
+  if (db) {
+    try {
       const profileRef = doc(db, 'profiles', PROFILE_DOC_ID);
       await setDoc(profileRef, {
-        ...profileData,
+        ...preparedData,
         updatedAt: serverTimestamp()
-      }, { merge: true }).catch(() => {});
+      }, { merge: true });
+      firestoreOk = true;
+    } catch (err) {
+      console.warn('Firestore sync warning:', err?.message);
+      lastErr = err;
     }
-
-    // Also mirror to Realtime Database for high-speed sync
-    if (rtdb) {
-      try {
-        const rtdbRef = ref(rtdb, 'profile');
-        await set(rtdbRef, {
-          ...profileData,
-          updatedAt: Date.now()
-        }).catch(() => {});
-      } catch (e) {
-        // RTDB sync
-      }
-    }
-
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error?.message || 'Cloud sync unavailable' };
   }
+
+  // 2. Sync to Realtime Database
+  if (rtdb) {
+    try {
+      const rtdbRef = ref(rtdb, 'profile');
+      await set(rtdbRef, {
+        ...preparedData,
+        updatedAt: Date.now()
+      });
+      rtdbOk = true;
+    } catch (err) {
+      console.warn('RTDB sync warning:', err?.message);
+      if (!lastErr) lastErr = err;
+    }
+  }
+
+  if (firestoreOk || rtdbOk) {
+    return { success: true, firestore: firestoreOk, rtdb: rtdbOk, optimizedData: preparedData };
+  }
+
+  return { success: false, error: lastErr?.message || 'Cloud sync unavailable' };
 }
 
 /**
@@ -56,21 +112,26 @@ export async function saveProfileToCloud(profileData) {
  */
 export async function fetchProfileFromCloud() {
   try {
-    if (db) {
-      const profileRef = doc(db, 'profiles', PROFILE_DOC_ID);
-      const docSnap = await getDoc(profileRef);
-      if (docSnap.exists()) {
-        return { success: true, data: docSnap.data(), source: 'firestore' };
-      }
+    if (rtdb) {
+      try {
+        const rtdbRef = ref(rtdb, 'profile');
+        const snapshot = await get(rtdbRef);
+        if (snapshot.exists() && snapshot.val()) {
+          return { success: true, data: snapshot.val(), source: 'Realtime Database' };
+        }
+      } catch (e) {}
     }
 
-    if (rtdb) {
-      const rtdbRef = ref(rtdb, 'profile');
-      const snapshot = await get(rtdbRef);
-      if (snapshot.exists()) {
-        return { success: true, data: snapshot.val(), source: 'rtdb' };
-      }
+    if (db) {
+      try {
+        const profileRef = doc(db, 'profiles', PROFILE_DOC_ID);
+        const docSnap = await getDoc(profileRef);
+        if (docSnap.exists()) {
+          return { success: true, data: docSnap.data(), source: 'Firestore' };
+        }
+      } catch (e) {}
     }
+
     return { success: false, error: 'No profile found in cloud' };
   } catch (err) {
     return { success: false, error: err.message };
@@ -86,7 +147,7 @@ export async function testCloudConnection() {
   let rtdbOk = false;
   let errorMessage = '';
 
-  // 1. Test RTDB
+  // 1. Test RTDB Ping
   if (rtdb) {
     try {
       const pingRef = ref(rtdb, '_ping');
@@ -97,7 +158,7 @@ export async function testCloudConnection() {
     }
   }
 
-  // 2. Test Firestore
+  // 2. Test Firestore Ping
   if (db) {
     try {
       const pingDoc = doc(db, '_health', 'status');
@@ -121,13 +182,25 @@ export async function testCloudConnection() {
 }
 
 /**
- * Listen to real-time Profile updates from Cloud (Firestore & RTDB fallback)
+ * Listen to real-time Profile updates from Cloud (Firestore & RTDB)
  */
 export function subscribeToCloudProfile(onUpdate) {
   let unsubFirestore = () => {};
   let unsubRtdb = () => {};
 
   try {
+    if (rtdb) {
+      try {
+        const rtdbRef = ref(rtdb, 'profile');
+        unsubRtdb = onValue(rtdbRef, (snapshot) => {
+          const val = snapshot.val();
+          if (val && typeof val === 'object') {
+            onUpdate(val);
+          }
+        }, () => {});
+      } catch (e) {}
+    }
+
     if (db) {
       const profileRef = doc(db, 'profiles', PROFILE_DOC_ID);
       unsubFirestore = onSnapshot(profileRef, (docSnap) => {
@@ -135,25 +208,9 @@ export function subscribeToCloudProfile(onUpdate) {
           const cloudData = docSnap.data();
           onUpdate(cloudData);
         }
-      }, () => {
-        // Silent fallback
-      });
+      }, () => {});
     }
-
-    if (rtdb) {
-      try {
-        const rtdbRef = ref(rtdb, 'profile');
-        unsubRtdb = onValue(rtdbRef, (snapshot) => {
-          const val = snapshot.val();
-          if (val) {
-            onUpdate(val);
-          }
-        }, () => {});
-      } catch (e) {}
-    }
-  } catch (error) {
-    // Silent recovery
-  }
+  } catch (error) {}
 
   return () => {
     try { unsubFirestore?.(); } catch (e) {}
@@ -166,36 +223,35 @@ export function subscribeToCloudProfile(onUpdate) {
  */
 export async function saveContactMessageToCloud(messageData) {
   let docId = 'msg_' + Date.now();
-  try {
-    if (db) {
+  let saved = false;
+
+  if (rtdb) {
+    try {
+      const rtdbMessages = ref(rtdb, 'messages');
+      await push(rtdbMessages, {
+        ...messageData,
+        firebaseId: docId,
+        createdAt: Date.now(),
+        read: false
+      });
+      saved = true;
+    } catch (e) {}
+  }
+
+  if (db) {
+    try {
       const messagesCollection = collection(db, 'messages');
       const docRef = await addDoc(messagesCollection, {
         ...messageData,
         createdAt: serverTimestamp(),
         read: false
-      }).catch(() => null);
-
-      if (docRef?.id) {
-        docId = docRef.id;
-      }
-    }
-
-    if (rtdb) {
-      try {
-        const rtdbMessages = ref(rtdb, 'messages');
-        await push(rtdbMessages, {
-          ...messageData,
-          firebaseId: docId,
-          createdAt: Date.now(),
-          read: false
-        }).catch(() => {});
-      } catch (e) {}
-    }
-
-    return { success: true, id: docId };
-  } catch (error) {
-    return { success: true, id: docId };
+      });
+      if (docRef?.id) docId = docRef.id;
+      saved = true;
+    } catch (e) {}
   }
+
+  return { success: saved, id: docId };
 }
 
 /**
@@ -206,6 +262,25 @@ export function subscribeToCloudMessages(onMessagesUpdate) {
   let unsubRtdb = () => {};
 
   try {
+    if (rtdb) {
+      try {
+        const rtdbMessages = ref(rtdb, 'messages');
+        unsubRtdb = onValue(rtdbMessages, (snapshot) => {
+          const val = snapshot.val();
+          if (val && typeof val === 'object') {
+            const list = Object.keys(val).map(k => ({
+              id: val[k].firebaseId || k,
+              ...val[k],
+              timestamp: val[k].createdAt ? new Date(val[k].createdAt).toISOString() : new Date().toISOString()
+            })).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            if (list.length > 0) {
+              onMessagesUpdate(list);
+            }
+          }
+        }, () => {});
+      } catch (e) {}
+    }
+
     if (db) {
       const messagesCollection = collection(db, 'messages');
       const q = query(messagesCollection, orderBy('createdAt', 'desc'), limit(100));
@@ -225,25 +300,6 @@ export function subscribeToCloudMessages(onMessagesUpdate) {
           onMessagesUpdate(messages);
         }
       }, () => {});
-    }
-
-    if (rtdb) {
-      try {
-        const rtdbMessages = ref(rtdb, 'messages');
-        unsubRtdb = onValue(rtdbMessages, (snapshot) => {
-          const val = snapshot.val();
-          if (val && typeof val === 'object') {
-            const list = Object.keys(val).map(k => ({
-              id: val[k].firebaseId || k,
-              ...val[k],
-              timestamp: val[k].createdAt ? new Date(val[k].createdAt).toISOString() : new Date().toISOString()
-            })).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            if (list.length > 0) {
-              onMessagesUpdate(list);
-            }
-          }
-        }, () => {});
-      } catch (e) {}
     }
   } catch (error) {}
 
