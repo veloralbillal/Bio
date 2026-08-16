@@ -3,6 +3,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { generateSitemapXml, generateRobotsTxt } from './src/js/seoGenerator.js';
+import { 
+  pingSupabaseServer, 
+  syncProfileToSupabaseServer, 
+  getProfileFromSupabaseServer, 
+  saveContactToSupabaseServer 
+} from './serverSupabase.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -114,6 +120,9 @@ app.post('/api/contact', (req, res) => {
   store.messages.unshift(newMessage);
   saveData();
 
+  // Async server-side push to Supabase
+  saveContactToSupabaseServer(newMessage).catch(() => {});
+
   console.log(`[CONTACT EMAIL SENT] To: billalhossen.self@gmail.com | From: ${name} (${email}) | Subject: ${subject}`);
 
   return res.json({
@@ -181,7 +190,33 @@ app.post('/api/admin/profile', (req, res) => {
   const host = req.get('host');
   const domain = `${protocol}://${host}`;
   saveData(domain);
+
+  // Sync with Supabase in background
+  syncProfileToSupabaseServer(req.body).catch(() => {});
+
   return res.json({ success: true, profile: store.profile });
+});
+
+// Supabase Status Endpoint
+app.get('/api/supabase/status', async (req, res) => {
+  const status = await pingSupabaseServer();
+  return res.json(status);
+});
+
+// Supabase Force Sync Endpoint
+app.post('/api/supabase/sync', async (req, res) => {
+  const profileToSync = req.body.profile || store.profile;
+  if (!profileToSync) {
+    return res.status(400).json({ success: false, error: 'No profile data provided to sync' });
+  }
+  const result = await syncProfileToSupabaseServer(profileToSync);
+  return res.json(result);
+});
+
+// Supabase Fetch Profile Endpoint
+app.get('/api/supabase/fetch', async (req, res) => {
+  const result = await getProfileFromSupabaseServer();
+  return res.json(result);
 });
 
 // Mark Message as Read or Delete Message

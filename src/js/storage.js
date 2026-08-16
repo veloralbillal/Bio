@@ -9,6 +9,13 @@ import {
   markCloudMessageRead,
   trackCloudAnalytics
 } from './firebaseService.js';
+import {
+  saveProfileToSupabase,
+  fetchProfileFromSupabase,
+  saveMessageToSupabase,
+  trackSupabaseAnalytics
+} from './supabaseService.js';
+import { getActiveDbProvider, DB_PROVIDERS } from './dbSwitcher.js';
 
 const STORAGE_KEY = 'gravatar_hub_profile_v2';
 const MESSAGES_KEY = 'gravatar_hub_messages_v1';
@@ -121,7 +128,7 @@ export function loadProfileData() {
   return initialProfileData;
 }
 
-// Save profile data to localStorage, Firebase Cloud, and API
+// Save profile data to localStorage, Firebase Cloud, Supabase, and API
 export async function saveProfileData(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -130,7 +137,10 @@ export async function saveProfileData(data) {
     // 1. Sync directly to Firebase Firestore & RTDB Cloud
     const cloudRes = await saveProfileToCloud(data);
 
-    // 2. Post to server if Express API is available
+    // 2. Sync directly to Supabase Postgres Cloud
+    saveProfileToSupabase(data).catch(() => {});
+
+    // 3. Post to server if Express API is available
     fetch('/api/admin/profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -148,13 +158,23 @@ export async function saveProfileData(data) {
 export function initCloudSync(onProfileUpdate, onMessagesUpdate) {
   let isMounted = true;
 
-  // 1. Proactive immediate cloud fetch on boot
+  // 1. Proactive immediate cloud fetch on boot (Firebase & Supabase)
   fetchProfileFromCloud().then((res) => {
     if (isMounted && res.success && res.data) {
       const merged = { ...loadProfileData(), ...res.data };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
       window.dispatchEvent(new CustomEvent('gravatar_profile_updated', { detail: merged }));
       if (onProfileUpdate) onProfileUpdate(merged);
+    } else {
+      // Fallback fetch from Supabase
+      fetchProfileFromSupabase().then((sRes) => {
+        if (isMounted && sRes.success && sRes.data) {
+          const merged = { ...loadProfileData(), ...sRes.data };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+          window.dispatchEvent(new CustomEvent('gravatar_profile_updated', { detail: merged }));
+          if (onProfileUpdate) onProfileUpdate(merged);
+        }
+      }).catch(() => {});
     }
   }).catch(() => {});
 
@@ -214,7 +234,10 @@ export async function sendContactMessage(formData) {
     newMessage.firebaseId = cloudRes.id;
   }
 
-  // 3. Also post to backend server if online
+  // 3. Save directly to Supabase Postgres Database
+  saveMessageToSupabase(newMessage).catch(() => {});
+
+  // 4. Also post to backend server if online
   try {
     fetch('/api/contact', {
       method: 'POST',
@@ -254,8 +277,9 @@ export function trackEvent(event, label) {
     localStorage.setItem(ANALYTICS_KEY, JSON.stringify(stats));
     window.dispatchEvent(new CustomEvent('gravatar_analytics_updated', { detail: stats }));
 
-    // Firebase Cloud Analytics & Firestore tracking
+    // Firebase & Supabase Cloud Analytics tracking
     trackCloudAnalytics(event, label, isMobile ? 'mobile' : 'desktop');
+    trackSupabaseAnalytics(event, label, isMobile ? 'mobile' : 'desktop');
 
     // Async server tracking
     fetch('/api/analytics/track', {

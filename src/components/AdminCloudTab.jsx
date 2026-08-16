@@ -12,6 +12,7 @@ import {
   hasCustomFirebaseConfig 
 } from '../js/firebaseConfigManager';
 import { testCloudConnection, saveProfileToCloud, fetchProfileFromCloud } from '../js/firebaseService';
+import DbSwapButton from './DbSwapButton';
 
 export default function AdminCloudTab({ profile, onUpdateProfile }) {
   const [currentConfig, setCurrentConfig] = useState(getFirebaseConfig());
@@ -141,6 +142,8 @@ export default function AdminCloudTab({ profile, onUpdateProfile }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <DbSwapButton />
+
           <button
             onClick={handleRunTest}
             disabled={testing}

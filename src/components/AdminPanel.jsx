@@ -7,7 +7,7 @@ import {
   Activity, TrendingUp, Users, MousePointer, ExternalLink, Sparkles,
   Upload, Github, Linkedin, Twitter, Youtube, Facebook, Instagram,
   Send, PhoneCall, Music, BookOpen, Dribbble, MessageSquare, Code, Filter,
-  Coins, QrCode, Wallet, Heart, FileText, FileCode, Cloud
+  Coins, QrCode, Wallet, Heart, FileText, FileCode, Cloud, Database, Server
 } from 'lucide-react';
 import { PREDEFINED_NETWORKS } from '../js/predefinedNetworks';
 import { getStoredMessages, deleteStoredMessage } from '../js/storage';
@@ -15,6 +15,8 @@ import AdminDonationTab from './AdminDonationTab';
 import AdminSeoTab from './AdminSeoTab';
 import AdminMetadataTab from './AdminMetadataTab';
 import AdminCloudTab from './AdminCloudTab';
+import AdminSupabaseTab from './AdminSupabaseTab';
+import DbSwapButton from './DbSwapButton';
 import { handleOptimizedUpload } from '../js/imageOptimizer';
 
 export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) {
@@ -356,6 +358,7 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
 
   const sidebarTabs = [
     { id: 'homepage_analysis', label: 'Homepage Analysis', icon: Activity, desc: 'Traffic, clicks & engagement' },
+    { id: 'supabase_cloud', label: 'Supabase Database & Server', icon: Database, desc: 'Postgres cloud sync, tables & server endpoints' },
     { id: 'cloud_sync', label: 'Cloud Sync & Firebase', icon: Cloud, desc: 'Realtime sync, connection test & API keys' },
     { id: 'metadata_manager', label: 'Dynamic Metadata & OG', icon: FileCode, desc: 'Meta tags, titles & social share cards' },
     { id: 'seo_sitemap', label: 'Auto Sitemap & Robots.txt', icon: FileText, desc: 'Dynamic XML sitemap & search indexing' },
@@ -411,6 +414,9 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
 
         {/* TOP RIGHT: QUICK ACTIONS */}
         <div className="flex items-center gap-2">
+          {/* DATABASE PROVIDER SWAP BUTTON */}
+          <DbSwapButton />
+
           <button
             onClick={handleSaveAll}
             disabled={isSaving}
@@ -843,6 +849,14 @@ export default function AdminPanel({ isOpen, onClose, profile, onSaveProfile }) 
                 </div>
               );
             })()}
+
+            {/* FEATURE: Supabase Database & Server Center */}
+            {activeTab === 'supabase_cloud' && (
+              <AdminSupabaseTab 
+                profile={editedProfile} 
+                onUpdateProfile={setEditedProfile} 
+              />
+            )}
 
             {/* FEATURE: Firebase Cloud Sync & Secrets Center */}
             {activeTab === 'cloud_sync' && (
